@@ -1,0 +1,57 @@
+:root {
+    --color-1: #fa7070;
+    --color-2: #fefded;
+    --color-3: #c6ebc5;
+    --color-4: #a1c398;
+}
+
+* {
+    font-family: 'Hanken Grotesk', sans-serif;
+}
+
+.bg-c-1 {
+    background-color: var(--color-1);
+}
+
+.bg-c-2 {
+    background-color: var(--color-2);
+}
+
+.bg-c-3 {
+    background-color: var(--color-3);
+}
+
+.bg-c-4 {
+    background-color: var(--color-4);
+}
+
+@media screen and (max-width: 767.9px) {
+    .mobile {
+        position: fixed;
+        padding-bottom: 2rem;
+        bottom: 0;
+    }
+
+    .nav-link:focus,
+    .nav-link:hover {
+        opacity: 0.75;
+    }
+
+    .nav-pills .nav-link.active,
+    .nav-pills .show > .nav-link {
+        color: inherit;
+        background-color: white;
+    }
+
+    #navTab .nav-link {
+        color: white;
+    }
+
+    #navTab .nav-link:focus {
+        color: #333;
+    }
+
+    #navTab .nav-link.active {
+        color: #333;
+    }
+}

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>KURS</title>
+
+        <!-- BOOTSTRAP -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+        <!-- TABLER ICONS -->
+        <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@latest/dist/ionicons/ionicons.esm.js"></script>
+        <script nomodule src="https://cdn.jsdelivr.net/npm/ionicons@latest/dist/ionicons/ionicons.js"></script>
+
+        <!-- STYLING CSS -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css' ) }}" />
+
+        <!-- FONTS -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet" />
+    </head>
+    <body>
+        <head>
+            <nav class="navbar navbar-expand-lg navbar-dark bg-success">
+                <div class="container">
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <button class="btn btn-light" type="button">
+                        <ion-icon name="notifications-circle"></ion-icon>
+                    </button>
+                    <a class="navbar-brand fw-bold d-none d-lg-block" href="#"><img id="brandLogo" src="{{ url_for('static', filename='img/KURS_WHITE.svg' ) }}" alt="Logo" height="30" /></a>
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="#">Beranda</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">Wiki</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">Laporan</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">Riwayat</a>
+                            </li>
+                        </ul>
+                        <!-- <form class="d-flex mb-2 mb-lg-0" role="search">
+                                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" />
+                                    <button class="btn btn-outline-light" type="submit">Search</button>
+                                </form> -->
+                        <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-3">
+                            <!-- <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"> Profil </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#">Action</a></li>
+                                    <li><a class="dropdown-item" href="#">Another action</a></li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li><a class="dropdown-item" href="#">Something else here</a></li>
+                                </ul>
+                            </li> -->
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" role="button" id="getStarted" class="btn btn-light rounded-pill">Get Started</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </head>
+
+        <main>
+            <div class="tab-content my-2" id="navTabContent">
+                <div class="tab-pane fade show active" id="home-tab-pane" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col">Beranda</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="wiki-tab-pane" role="tabpanel" aria-labelledby="wiki-tab" tabindex="0">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col">Wiki</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="camera-tab-pane" role="tabpanel" aria-labelledby="camera-tab" tabindex="0">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col">Camera</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col">History</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="profile-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col">Profile</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <ul class="nav nav-pills nav-justified p-2 position-absolute w-100 bottom-0 bg-success navbar-dark" id="navTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link d-flex flex-column justify-content-center align-items-center active"
+                        id="home-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#home-tab-pane"
+                        type="button"
+                        role="tab"
+                        aria-controls="home-tab-pane"
+                        aria-selected="false"
+                    >
+                        <ion-icon name="home"></ion-icon>
+                        <small>Home</small>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link d-flex justify-content-center flex-column justify-content-center align-items-center"
+                        id="wiki-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#wiki-tab-pane"
+                        type="button"
+                        role="tab"
+                        aria-controls="wiki-tab-pane"
+                        aria-selected="false"
+                    >
+                        <ion-icon name="book"></ion-icon>
+                        <small>Wiki</small>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link d-flex justify-content-center flex-column justify-content-center align-items-center"
+                        id="camera-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#camera-tab-pane"
+                        type="button"
+                        role="tab"
+                        aria-controls="camera-tab-pane"
+                        aria-selected="false"
+                    >
+                        <ion-icon name="camera"></ion-icon>
+                        <small>Cam</small>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link d-flex justify-content-center flex-column justify-content-center align-items-center"
+                        id="history-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#history-tab-pane"
+                        type="button"
+                        role="tab"
+                        aria-controls="history-tab-pane"
+                        aria-selected="false"
+                    >
+                        <ion-icon name="time"></ion-icon>
+                        <small>History</small>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link d-flex justify-content-center flex-column justify-content-center align-items-center"
+                        id="profile-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#profile-tab-pane"
+                        type="button"
+                        role="tab"
+                        aria-controls="profile-tab-pane"
+                        aria-selected="false"
+                    >
+                        <ion-icon name="person"></ion-icon>
+                        <small>Profile</small>
+                    </button>
+                </li>
+            </ul>
+        </main>
+
+        {% block container %} {% endblock %}
+
+        <script defer src="{{ url_for('static', filename='main.js' ) }}"></script>
+    </body>
+</html>
