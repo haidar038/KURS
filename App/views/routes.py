@@ -20,6 +20,13 @@ def serve_manifest():
 def serve_sw():
     return send_file('sw.js', mimetype='application/javascript')
 
+# MAIN ROUTES
+
 @views.route('/')
 def index():
-    return render_template('index.html')
+    data_tps = [
+        {"id": 1, "nama": "TPS Gambesi", "latitude": "0.7552107801638247", "longitude": "127.33604266194835"},
+        # Tambahkan data TPS lainnya dengan ID unik
+    ]
+
+    return render_template('index.html', data_tps=data_tps)

@@ -25,6 +25,17 @@
     background-color: var(--color-4);
 }
 
+.text-bg-gold {
+    background-image: linear-gradient(#fedb68, #fffa8a);
+    background-repeat: no-repeat;
+}
+
+/** IDs */
+
+/* #tpsMap {
+    height: 280px;
+} */
+
 @media screen and (max-width: 767.9px) {
     .mobile {
         position: fixed;
