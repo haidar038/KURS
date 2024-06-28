@@ -1,41 +1,78 @@
-{% extends 'base.html' %} {% block homeContainer %}
-
-<div class="container">
-    <div class="row">
-        <div class="col">
-            <div class="card card-body rounded-4 text-bg-success mb-4">
-                <div class="d-flex gap-3 justify-content-between">
-                    <div class="d-flex flex-column">
-                        <p class="h1 display-1 fw-bold">500g</p>
-                        <p class="h2">CO<sub>2</sub> Tersimpan</p>
-                    </div>
-                    <div class="vr"></div>
-                    <div class="d-flex flex-column justify-content-between">
-                        <div class="">
-                            <p class="mb-0">Poin : <strong>120</strong></p>
-                            <p class="mb-0">Sampah yang disetor : <strong>24kg</strong></p>
-                        </div>
-                        <div class="badge text-bg-light rounded-pill">Silver User</div>
-                    </div>
-                </div>
+<div class="card card-body rounded-4 text-bg-success mb-4">
+    <div class="d-flex gap-3 justify-content-between">
+        <div class="d-flex flex-column">
+            <p class="h1 display-1 fw-bold">500g</p>
+            <p class="h2">CO<sub>2</sub> Tersimpan</p>
+        </div>
+        <div class="vr"></div>
+        <div class="d-flex flex-column justify-content-between">
+            <div class="">
+                <p class="mb-0">Poin : <strong class="">120</strong></p>
+                <p class="mb-0">Sampah yang disetor : <strong>24kg</strong></p>
             </div>
-            <p>Lokasi TPS Terdekat</p>
-            {% for tps in data_tps %}
-            <div class="card card-body rounded-4 shadow-sm mb-3">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h5 class="card-title">{{ tps.nama }}</h5>
-                        <small class="card-text">
-                            Jarak: <span class="fw-bold" id="jarak-{{ loop.index }}"></span><br />
-                            Waktu Tempuh: <span class="fw-bold" id="waktu-{{ loop.index }}"></span>
-                        </small>
+            <div class="badge text-bg-light rounded-pill">Silver User</div>
+        </div>
+    </div>
+</div>
+
+<p class="fw-bold">Lokasi TPS Terdekat</p>
+{% for tps in data_tps %}
+<div class="card card-body rounded-4 shadow-sm mb-3">
+    <div class="d-flex justify-content-between">
+        <div>
+            <h5 class="card-title">{{ tps.nama }}</h5>
+            <div class="card-text d-flex gap-2 align-items-center">
+                Jarak: <span class="d-flex"><ion-icon class="text-danger" name="location"></ion-icon></span> <span class="fw-bold" id="jarak-{{ loop.index }}"></span>
+            </div>
+            <div class="card-text d-flex gap-2 align-items-center">
+                Waktu Tempuh: <span class="d-flex"><ion-icon class="text-primary" name="time"></ion-icon></span> <span class="fw-bold" id="waktu-{{ loop.index }}"></span>
+            </div>
+        </div>
+        <a href="#" class="btn btn-light d-flex align-items-center fs-3" onclick="showTPSDetails({{ tps.latitude|float }}, {{ tps.longitude|float }}, '{{ tps.nama }}')"><ion-icon name="chevron-forward"></ion-icon></a>
+    </div>
+</div>
+{% endfor %}
+<p class="fw-bold">Artikel</p>
+<div id="carouselExample" class="carousel slide">
+    <div class="carousel-inner">
+        <div class="carousel-item active">
+            {% for articles in artikel %}
+            <div class="card card-body rounded-4 shadow">
+                <p class="fw-bold h5 mb-0">{{ articles.judul }}</p>
+                <hr />
+                <div class="col text-truncate mb-3">
+                    <div class="truncate-multi-line">{{ articles.konten | safe }}</div>
+                </div>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#artikel{{ articles.id }}">Baca Selengkapnya</button>
+                <!-- Modal -->
+                <div class="modal fade" id="artikel{{ articles.id }}" tabindex="-1" aria-labelledby="artikel{{ articles.id }}Label" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="artikel{{ articles.id }}Label">{{ articles.judul }}</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-0">{{ articles.konten | safe }}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                            </div>
+                        </div>
                     </div>
-                    <a href="#" class="btn btn-light d-flex align-items-center fs-3" onclick="showTPSDetails({{ tps.latitude }}, {{ tps.longitude }}, '{{ tps.nama }}')"><ion-icon name="chevron-forward"></ion-icon></a>
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+    </button>
 </div>
 
 <!-- Modal untuk menampilkan peta -->
@@ -47,115 +84,12 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="tps-detail-map" style="height: 400px"></div>
+                <div id="map-wrapper-outer" class="d-flex justify-content-center align-items-center">
+                    <div id="map-wrapper-inner">
+                        <div id="tps-detail-map"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-
-{% endblock %} {% block mapsApi %}
-<script>
-    var detailMap;
-    var dataTPS = JSON.parse('{{ data_tps | tojson | safe }}');
-
-    function initDetailMap(latitude, longitude) {
-        detailMap = L.map('tps-detail-map').setView([latitude, longitude], 13);
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(detailMap);
-    }
-
-    // Fungsi untuk menampilkan detail TPS dan peta
-    function showTPSDetails(latitude, longitude, nama) {
-        // Set judul modal dengan nama TPS
-        $('#tpsDetailModalLabel').text('TPS: ' + nama);
-
-        // Periksa apakah peta sudah diinisialisasi
-        if (!detailMap) {
-            // Inisialisasi peta jika belum ada
-            initDetailMap(latitude, longitude);
-        } else {
-            // Perbarui tampilan peta jika sudah ada
-            detailMap.setView([latitude, longitude], 13);
-        }
-
-        // Tambahkan marker ke peta (hapus marker sebelumnya jika ada)
-        // detailMap.eachLayer(function (layer) {
-        //     if (layer instanceof L.Marker) {
-        //         detailMap.removeLayer(layer);
-        //     }
-        // });
-        L.marker([latitude, longitude])
-            .addTo(detailMap)
-            .bindPopup('<b>' + nama + '</b>')
-            .openPopup();
-
-        // Tampilkan modal
-        $('#tpsDetailModal').modal('show');
-    }
-
-    // Fungsi untuk mendapatkan lokasi pengguna
-    function getUserLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(showPosition, showError);
-        } else {
-            console.error('Geolocation is not supported by this browser.');
-        }
-    }
-
-    // Fungsi yang dijalankan jika izin diberikan
-    function showPosition(position) {
-        // Koordinat pengguna
-        var userLat = position.coords.latitude;
-        var userLon = position.coords.longitude;
-
-        console.log('Latitude: ' + userLat + ', Longitude: ' + userLon);
-
-        // Hitung jarak ke setiap TPS
-        dataTPS.forEach(function (tps, index) {
-            // Konversi latitude dan longitude ke float
-            var tpsLat = parseFloat(tps.latitude);
-            var tpsLon = parseFloat(tps.longitude);
-
-            var jarak = calculateDistance(userLat, userLon, tpsLat, tpsLon);
-            var waktuTempuh = hitungWaktuTempuh(jarak); // Ganti dengan logika perhitungan waktu tempuh Anda
-
-            // Tampilkan jarak dan waktu tempuh di dalam card
-            $('#jarak-' + (index + 1)).text(jarak.toFixed(2) + ' km');
-            $('#waktu-' + (index + 1)).text(waktuTempuh);
-        });
-    }
-
-    // Fungsi yang dijalankan jika terjadi error
-    function showError(error) {
-        console.error('Error getting user location:', error);
-        // Tampilkan pesan error kepada pengguna atau gunakan data lokasi default
-    }
-
-    // Fungsi untuk menghitung jarak antara dua titik koordinat (dalam kilometer)
-    function calculateDistance(lat1, lon1, lat2, lon2) {
-        var R = 6371; // Radius bumi dalam kilometer
-        var dLat = deg2rad(lat2 - lat1);
-        var dLon = deg2rad(lon2 - lon1);
-        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        var d = R * c; // Jarak dalam kilometer
-        return d;
-    }
-
-    function deg2rad(deg) {
-        return deg * (Math.PI / 180);
-    }
-
-    // Contoh fungsi untuk menghitung waktu tempuh (ganti dengan logika Anda)
-    function hitungWaktuTempuh(jarak) {
-        // Asumsi kecepatan rata-rata 40 km/jam
-        var waktuJam = jarak / 40;
-        var waktuMenit = Math.round(waktuJam * 60);
-        return waktuMenit + ' menit';
-    }
-
-    // Panggil fungsi untuk mendapatkan lokasi pengguna saat halaman dimuat
-    getUserLocation();
-</script>
-{% endblock %}

@@ -1,0 +1,111 @@
+{% extends 'base.html' %} {% block head %}
+<!-- HEAD STYLING -->
+{% endblock %} {% block container %}
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h1 class="fw-bold mb-3 text-center">Tambah Lokasi TPS</h1>
+            <div class="card card-body rounded-4 shadow mb-3">
+                <form action="" method="post">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="nama_tps" name="nama_tps" placeholder="Nama TPS" required />
+                        <label for="nama_tps">Nama TPS</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="alamat" name="alamat" placeholder="Alamat" required />
+                        <label for="alamat">Alamat</label>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="latitude" name="latitude" placeholder="Latitude" required />
+                                <label for="latitude">Latitude</label>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="longitude" name="longitude" placeholder="Longitude" required />
+                                <label for="longitude">Longitude</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <select class="form-select mb-3" id="jenis_sampah" aria-label="Jenis Sampah" name="jenis_sampah" required>
+                            <!-- <option selected>Jenis Sampah</option> -->
+                            <option value="organik" selected>Organik</option>
+                            <option value="anorganik">Anorganik</option>
+                            <option value="campuran">Campuran</option>
+                        </select>
+                        <label for="jenis_sampah">Jenis Sampah</label>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <div class="mb-3 form-floating">
+                                <input type="time" class="form-control" id="jam_operasional_start" name="jam_operasional_start" placeholder="Jam Operasional" required />
+                                <label for="jam_operasional_start" class="form-label">Jam Buka</label>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="mb-3 form-floating">
+                                <input type="time" class="form-control" id="jam_operasional_end" name="jam_operasional_end" placeholder="Jam Operasional" required />
+                                <label for="jam_operasional_end" class="form-label">Jam Tutup</label>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Simpan</button>
+                </form>
+            </div>
+            <div class="card card-body rounded-4 shadow">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr class="align-middle">
+                                <th scope="col">#</th>
+                                <th scope="col">Alamat</th>
+                                <th scope="col">Lat</th>
+                                <th scope="col">Lang</th>
+                                <th scope="col">Jenis Sampah</th>
+                                <th scope="col">Jam Operasional</th>
+                                <th scope="col">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tps_list in tps %}
+                            <tr class="align-middle">
+                                <th scope="row">{{ loop.index }}</th>
+                                <td>{{ tps_list.alamat }}</td>
+                                <td>{{ tps_list.latitude }}</td>
+                                <td>{{ tps_list.longitude }}</td>
+                                <td class="text-capitalize">{{ tps_list.jenis_sampah }}</td>
+                                <td>{{ tps_list.jam_operasional_start }} - {{ tps_list.jam_operasional_end }} WIT</td>
+                                <td>
+                                    <a href="{{ url_for('views.delete_tps', id=tps_list.id ) }}" role="button" class="btn btn-danger align-items-center justify-content-center d-flex flex-column"><ion-icon name="trash"></ion-icon></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<!-- SCRIPTS -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var elements = document.getElementsByTagName('INPUT');
+        for (var i = 0; i < elements.length; i++) {
+            elements[i].oninvalid = function (e) {
+                e.target.setCustomValidity('');
+                if (!e.target.validity.valid) {
+                    e.target.setCustomValidity('Form ini tidak boleh kosong');
+                }
+            };
+            elements[i].oninput = function (e) {
+                e.target.setCustomValidity('');
+            };
+        }
+    });
+</script>
+{% endblock %}

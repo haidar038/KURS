@@ -5,8 +5,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from App import db, login_manager
 
-
-
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -23,6 +21,38 @@ class User(UserMixin, db.Model):
 
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+class TPS(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nama = db.Column(db.String(100), nullable=False)
+    alamat = db.Column(db.Text, nullable=True)  # Opsional: Jika ingin menyimpan alamat lengkap
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    jenis_sampah = db.Column(db.String(255), nullable=True)  # Contoh: 'Organik, Anorganik'
+    jam_operasional_start = db.Column(db.String(100), nullable=True)  # Contoh: '08:00 - 17:00'
+    jam_operasional_end = db.Column(db.String(100), nullable=True)  # Contoh: '08:00 - 17:00'
+
+    # def __init__(self, id, nama, alamat, latitude, longitude, jenis_sampah, jam_operasional_start, jam_operasional_end):
+    #     self.id = id
+    #     self.nama = nama
+    #     self.alamat = alamat
+    #     self.jenis_sampah = jenis_sampah
+    #     self.latitude = latitude
+    #     self.longitude = longitude
+    #     self.jam_operasional_start = jam_operasional_start
+    #     self.jam_operasional_end = jam_operasional_end
+    
+    # def to_dict(self):
+    #     return {
+    #         'id': self.id,
+    #         'nama': self.nama,
+    #         'alamat': self.alamat,
+    #         'jenis_sampah': self.jenis_sampah,
+    #         'latitude': self.latitude,
+    #         'longitude': self.longitude,
+    #         'jam_operasional_start': self.jam_operasional_start,
+    #         'jam_operasional_end': self.jam_operasional_end
+    #     }
 
 class AppAdmin(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -53,7 +83,10 @@ class Laporan(db.Model):
 
     masyarakat = db.relationship('Masyarakat', backref='laporan')
 
-# ...Model lain untuk fitur tambahan
+class Artikel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    judul = db.Column(db.String(255), nullable=False)
+    konten = db.Column(db.Text(), nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):

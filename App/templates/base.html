@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
 
         <title>KURS</title>
@@ -19,7 +19,8 @@
 
         <!-- STYLING CSS -->
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css' ) }}" />
-        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+        <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
+        {% block head %} {% endblock %}
 
         <!-- FONTS -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -27,13 +28,15 @@
         <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet" />
 
         <!-- LIBRARIES -->
-        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+        <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
         <script
             src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
             integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
             crossorigin="anonymous"
             referrerpolicy="no-referrer"
         ></script>
+        <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css" />
     </head>
     <body>
         <head>
@@ -42,14 +45,19 @@
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
-                    <button class="btn d-block d-lg-none d-flex align-items-center p-1 rounded-circle" type="button">
-                        <ion-icon name="notifications" class="fs-1"></ion-icon>
-                    </button>
+                    <div class="dropdown">
+                        <button class="btn d-block d-lg-none d-flex align-items-center p-1 rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <ion-icon name="notifications" class="fs-1"></ion-icon>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                        </ul>
+                    </div>
                     <a class="navbar-brand fw-bold d-none d-lg-block" href="#"><img id="brandLogo" src="{{ url_for('static', filename='img/KURS_WHITE.svg' ) }}" alt="Logo" height="30" /></a>
                     <div class="collapse navbar-collapse" id="navbarSupportedContent">
                         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                             <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="#">Beranda</a>
+                                <a class="nav-link {% if page == 'home' %} active {% endif %}" aria-current="page" href="{{ url_for('views.index' ) }}">Beranda</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="#">Wiki</a>
@@ -87,13 +95,19 @@
             </nav>
         </head>
 
-        <main>
-            <div class="tab-content my-2" id="navTabContent">
-                <div class="tab-pane fade show active" id="home-tab-pane" role="tabpanel" aria-labelledby="home-tab" tabindex="0">{% block homeContainer %} {% endblock %}</div>
+        <main style="padding-bottom: 65px" class="{% if page == 'add_tps' %} pb-2 {% endif %}">
+            <div class="tab-content my-2 {% if page == 'add_tps' %} d-none {% endif %}" id="navTabContent">
+                <div class="tab-pane fade show active" id="home-tab-pane" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col">{% include 'index.html' %}</div>
+                        </div>
+                    </div>
+                </div>
                 <div class="tab-pane fade" id="wiki-tab-pane" role="tabpanel" aria-labelledby="wiki-tab" tabindex="0">
                     <div class="container">
                         <div class="row">
-                            <div class="col">Wiki</div>
+                            <div class="col">{% include 'wiki.html' %}</div>
                         </div>
                     </div>
                 </div>
@@ -119,10 +133,10 @@
                     </div>
                 </div>
             </div>
-            <ul class="nav nav-pills nav-justified p-2 position-absolute w-100 bottom-0 bg-success navbar-dark d-flex d-lg-none" id="navTab" role="tablist">
-                <li class="nav-item" role="presentation">
+            <ul class="nav nav-pills w-100 bottom-0 bg-success navbar-dark d-flex d-lg-none {% if page == 'add_tps' %} d-none {% endif %}" id="navTab" role="tablist">
+                <li class="nav-item flex-fill" role="presentation">
                     <button
-                        class="nav-link d-flex flex-column justify-content-center align-items-center active"
+                        class="nav-link rounded-0 d-flex flex-column justify-content-center align-items-center {% if page == 'home' %} active {% endif %}"
                         id="home-tab"
                         data-bs-toggle="tab"
                         data-bs-target="#home-tab-pane"
@@ -135,9 +149,9 @@
                         <small>Home</small>
                     </button>
                 </li>
-                <li class="nav-item" role="presentation">
+                <li class="nav-item flex-fill" role="presentation">
                     <button
-                        class="nav-link d-flex justify-content-center flex-column justify-content-center align-items-center"
+                        class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'wiki' %} active {% endif %}"
                         id="wiki-tab"
                         data-bs-toggle="tab"
                         data-bs-target="#wiki-tab-pane"
@@ -150,9 +164,9 @@
                         <small>Wiki</small>
                     </button>
                 </li>
-                <li class="nav-item" role="presentation">
+                <li class="nav-item flex-fill" role="presentation">
                     <button
-                        class="nav-link d-flex justify-content-center flex-column justify-content-center align-items-center"
+                        class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'report' %} active {% endif %}"
                         id="report-tab"
                         data-bs-toggle="tab"
                         data-bs-target="#report-tab-pane"
@@ -165,9 +179,9 @@
                         <small>Report</small>
                     </button>
                 </li>
-                <li class="nav-item" role="presentation">
+                <li class="nav-item flex-fill" role="presentation">
                     <button
-                        class="nav-link d-flex justify-content-center flex-column justify-content-center align-items-center"
+                        class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'history' %} active {% endif %}"
                         id="history-tab"
                         data-bs-toggle="tab"
                         data-bs-target="#history-tab-pane"
@@ -180,9 +194,9 @@
                         <small>History</small>
                     </button>
                 </li>
-                <li class="nav-item" role="presentation">
+                <li class="nav-item flex-fill" role="presentation">
                     <button
-                        class="nav-link d-flex justify-content-center flex-column justify-content-center align-items-center"
+                        class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'profile' %} active {% endif %}"
                         id="profile-tab"
                         data-bs-toggle="tab"
                         data-bs-target="#profile-tab-pane"
@@ -215,7 +229,130 @@
             }
         </script>
 
-        <!-- LEAFLET SCRIPTS -->
-        {% block mapsApi %} {% endblock %}
+        <!-- TEXT TRUNCATE -->
+        <script>
+            document.addEventListener('DOMContentLoaded', (event) => {
+                document.querySelectorAll('.truncate-multi-line').forEach((element) => {
+                    // Create a temporary element to hold the HTML content and extract plain text
+                    let tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = element.innerHTML;
+                    let textContent = tempDiv.textContent || tempDiv.innerText || '';
+
+                    // Set the plain text content back to the element
+                    element.textContent = textContent;
+                });
+            });
+        </script>
+
+        <!-- MAPS API SCRIPT -->
+        <script>
+            var dataTPS = JSON.parse('{{ data_tps | tojson | safe }}');
+            var detailMap;
+
+            // Inisialisasi peta Mapbox di luar fungsi showTPSDetails
+            mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q';
+            const map = new mapboxgl.Map({
+                container: 'tps-detail-map',
+                style: 'mapbox://styles/mapbox/streets-v11',
+                center: [107.6096, -6.9175], // Atur koordinat awal, misalnya Jakarta
+                zoom: 10,
+            });
+            let marker;
+
+            // Fungsi untuk menampilkan detail TPS dan peta
+            function showTPSDetails(latitude, longitude, nama) {
+                // Set judul modal dengan nama TPS
+                $('#tpsDetailModalLabel').text('Lokasi TPS: ' + nama);
+
+                // Update posisi peta dan marker
+                map.flyTo({
+                    center: [longitude, latitude],
+                    zoom: 15,
+                });
+
+                // Hapus marker lama jika ada
+                if (marker) {
+                    marker.remove();
+                }
+
+                // Tambahkan marker baru
+                marker = new mapboxgl.Marker()
+                    .setLngLat([longitude, latitude])
+                    .setPopup(new mapboxgl.Popup().setHTML('<b>' + nama + '</b>'))
+                    .addTo(map);
+
+                // Tampilkan modal
+                $('#tpsDetailModal').modal('show');
+            }
+
+            $('#tpsDetailModal').on('shown.bs.modal', function () {
+                // Memaksa Mapbox untuk menggambar ulang peta dan menyesuaikan ukuran canvas
+                map.resize();
+            });
+
+            // Fungsi untuk mendapatkan lokasi pengguna
+            function getUserLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(showPosition, showError);
+                } else {
+                    console.error('Geolocation is not supported by this browser.');
+                }
+            }
+
+            // Fungsi yang dijalankan jika izin diberikan
+            function showPosition(position) {
+                // Koordinat pengguna
+                var userLat = position.coords.latitude;
+                var userLon = position.coords.longitude;
+
+                console.log('Latitude: ' + userLat + ', Longitude: ' + userLon);
+
+                // Hitung jarak ke setiap TPS
+                dataTPS.forEach(function (tps, index) {
+                    // Konversi latitude dan longitude ke float
+                    var tpsLat = parseFloat(tps.latitude);
+                    var tpsLon = parseFloat(tps.longitude);
+
+                    var jarak = calculateDistance(userLat, userLon, tpsLat, tpsLon);
+                    var waktuTempuh = hitungWaktuTempuh(jarak); // Ganti dengan logika perhitungan waktu tempuh Anda
+
+                    // Tampilkan jarak dan waktu tempuh di dalam card
+                    $('#jarak-' + (index + 1)).text(jarak.toFixed(2) + ' km');
+                    $('#waktu-' + (index + 1)).text(waktuTempuh);
+                });
+            }
+
+            // Fungsi yang dijalankan jika terjadi error
+            function showError(error) {
+                console.error('Error getting user location:', error);
+                // Tampilkan pesan error kepada pengguna atau gunakan data lokasi default
+            }
+
+            // Fungsi untuk menghitung jarak antara dua titik koordinat (dalam kilometer)
+            function calculateDistance(lat1, lon1, lat2, lon2) {
+                var R = 6371; // Radius bumi dalam kilometer
+                var dLat = deg2rad(lat2 - lat1);
+                var dLon = deg2rad(lon2 - lon1);
+                var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                var d = R * c; // Jarak dalam kilometer
+                return d;
+            }
+
+            function deg2rad(deg) {
+                return deg * (Math.PI / 180);
+            }
+
+            // Contoh fungsi untuk menghitung waktu tempuh (ganti dengan logika Anda)
+            function hitungWaktuTempuh(jarak) {
+                // Asumsi kecepatan rata-rata 40 km/jam
+                var waktuJam = jarak / 40;
+                var waktuMenit = Math.round(waktuJam * 60);
+                return waktuMenit + ' menit';
+            }
+
+            // Panggil fungsi untuk mendapatkan lokasi pengguna saat halaman dimuat
+            getUserLocation();
+        </script>
     </body>
 </html>
