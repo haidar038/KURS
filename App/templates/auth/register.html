@@ -1,0 +1,38 @@
+{% extends 'auth_base.html' %} {% block content %}
+<div class="container h-100">
+    <div class="row h-100">
+        <div class="col h-100 d-flex align-items-center">
+            <div class="card card-body text-bg-light">
+                <!-- FLASH MESSAGE -->
+                {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                {% endfor %} {% endif %} {% endwith %}
+                <h1 class="text-center mb-3">Register</h1>
+                <form method="POST" action="">
+                    <div class="mb-3">
+                        <label for="email_address" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email_address" name="email_address" placeholder="Masukkan Email Anda" />
+                    </div>
+                    <label for="password" class="form-label">Kata Sandi</label>
+                    <div class="input-group mb-3">
+                        <input type="password" class="form-control" id="password" name="password" placeholder="Masukkan Kata Sandi" />
+                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button"><i class="fa-solid fa-eye" id="togglePassword" style="cursor: pointer"></i></button>
+                    </div>
+                    <label for="confirm_password" class="form-label">Konfirmasi Kata Sandi</label>
+                    <div class="input-group mb-3">
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Ulangi Kata Sandi" />
+                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button"><i class="fa-solid fa-eye" id="toggleConfirmPassword" style="cursor: pointer"></i></button>
+                    </div>
+                    <p class="text-center mb-3">
+                        Anda menyatakan bahwa sudah menyetujui <a href="#" class="link-success fw-bold">Privacy Policy</a> dan <a href="{{ url_for('views.terms_of_use' ) }}" class="link-success fw-bold">Terms of Use</a> dengan mengklik
+                        "Bergabung"
+                    </p>
+                    <button type="submit" class="btn btn-success w-100">Bergabung!</button>
+                    <p class="text-center mt-3">Sudah punya akun? <a href="{{ url_for('auth.login' ) }}" class="link-success fw-bold">Masuk</a></p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

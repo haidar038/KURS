@@ -21,10 +21,16 @@ migrate = Migrate(app, db)
 load_dotenv()
 
 def create_app():
+    UPLOAD_FOLDER = os.path.join(app.root_path, 'static/uploads')
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Pastikan folder ada
+
     app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "kursampah") # Gunakan variabel environment atau nilai default
     app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{os.environ.get("MYSQLUSER")}:{os.environ.get("MYSQLPASSWORD")}@{os.environ.get("MYSQLHOST")}:{os.environ.get("MYSQLPORT")}/{os.environ.get("MYSQLDATABASE")}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['CKEDITOR_PKG_TYPE'] = 'basic'
+    app.config['CKEDITOR_ENABLE_CSRF'] = True
+    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    # Konfigurasi folder upload
 
     db.init_app(app)
     socketio.init_app(app)
@@ -32,13 +38,12 @@ def create_app():
     ckeditor.init_app(app)
     toastr.init_app(app)
 
-    # from .auth.routes import auth
     # from .admin.routes import admin_page
+    from .Authentication.routes import auth
     from .views.routes import views
 
-    # app.register_blueprint(auth, url_prefix='/')
+    app.register_blueprint(auth, url_prefix='/')
     app.register_blueprint(views, url_prefix='/')
-    # app.register_blueprint(admin_page, url_prefix='/')
 
     login_manager.login_view = 'auth.login'
 

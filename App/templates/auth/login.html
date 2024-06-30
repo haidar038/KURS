@@ -1,0 +1,27 @@
+{% extends 'auth_base.html' %} {% block content %}
+<div class="container h-100">
+    <div class="row h-100">
+        <div class="col h-100 d-flex align-items-center">
+            <div class="card card-body text-bg-light">
+                <h1 class="text-center">Login</h1>
+                {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                {% endfor %} {% endif %} {% endwith %}
+                <form method="POST" action="">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" placeholder="Masukkan Email Anda" />
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Kata Sandi</label>
+                        <input type="password" class="form-control" id="password" name="password" placeholder="Masukkan Kata Sandi" />
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Bergabung!</button>
+                    <p class="text-center mt-3">Belum punya akun? <a href="{{ url_for('auth.register' ) }}" class="link-success fw-bold">Daftar disini</a></p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

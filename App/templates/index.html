@@ -1,95 +1,105 @@
-<div class="card card-body rounded-4 text-bg-success mb-4">
-    <div class="d-flex gap-3 justify-content-between">
-        <div class="d-flex flex-column">
-            <p class="h1 display-1 fw-bold">500g</p>
-            <p class="h2">CO<sub>2</sub> Tersimpan</p>
-        </div>
-        <div class="vr"></div>
-        <div class="d-flex flex-column justify-content-between">
-            <div class="">
-                <p class="mb-0">Poin : <strong class="">120</strong></p>
-                <p class="mb-0">Sampah yang disetor : <strong>24kg</strong></p>
-            </div>
-            <div class="badge text-bg-light rounded-pill">Silver User</div>
-        </div>
-    </div>
-</div>
-
-<p class="fw-bold">Lokasi TPS Terdekat</p>
-{% for tps in data_tps %}
-<div class="card card-body rounded-4 shadow-sm mb-3">
-    <div class="d-flex justify-content-between">
-        <div>
-            <h5 class="card-title">{{ tps.nama }}</h5>
-            <div class="card-text d-flex gap-2 align-items-center">
-                Jarak: <span class="d-flex"><ion-icon class="text-danger" name="location"></ion-icon></span> <span class="fw-bold" id="jarak-{{ loop.index }}"></span>
-            </div>
-            <div class="card-text d-flex gap-2 align-items-center">
-                Waktu Tempuh: <span class="d-flex"><ion-icon class="text-primary" name="time"></ion-icon></span> <span class="fw-bold" id="waktu-{{ loop.index }}"></span>
-            </div>
-        </div>
-        <a href="#" class="btn btn-light d-flex align-items-center fs-3" onclick="showTPSDetails({{ tps.latitude|float }}, {{ tps.longitude|float }}, '{{ tps.nama }}')"><ion-icon name="chevron-forward"></ion-icon></a>
-    </div>
-</div>
-{% endfor %}
-<p class="fw-bold">Artikel</p>
-<div id="carouselExample" class="carousel slide">
-    <div class="carousel-inner">
-        <div class="carousel-item active">
-            {% for articles in artikel %}
-            <div class="card card-body rounded-4 shadow">
-                <p class="fw-bold h5 mb-0">{{ articles.judul }}</p>
-                <hr />
-                <div class="col text-truncate mb-3">
-                    <div class="truncate-multi-line">{{ articles.konten | safe }}</div>
+{% extends 'base.html' %} {% block container %}
+<div class="container pt-3">
+    <div class="row">
+        <div class="col">
+            <div class="card card-body rounded-4 text-bg-success mb-4">
+                <div class="d-flex gap-3 justify-content-between">
+                    <div class="d-flex flex-column">
+                        <p class="h1 display-1 fw-bold">500g</p>
+                        <p class="h3">CO<sub>2</sub> Saved</p>
+                    </div>
+                    <div class="vr"></div>
+                    <div class="d-flex flex-column justify-content-between">
+                        <div class="">
+                            <p class="mb-0">Poin : <strong class="">120</strong></p>
+                            <p class="mb-0">Sampah yang disetor : <strong>24kg</strong></p>
+                        </div>
+                        <div class="badge text-bg-light rounded-pill">Silver User</div>
+                    </div>
                 </div>
-                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#artikel{{ articles.id }}">Baca Selengkapnya</button>
-                <!-- Modal -->
-                <div class="modal fade" id="artikel{{ articles.id }}" tabindex="-1" aria-labelledby="artikel{{ articles.id }}Label" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-scrollable">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="artikel{{ articles.id }}Label">{{ articles.judul }}</h1>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <hr />
+            <p class="fw-bold h5">Lokasi TPS Terdekat</p>
+            {% for tps in data_tps %}
+            <div class="card card-body rounded-4 shadow-sm mb-3">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">{{ tps.nama }}</h5>
+                        <div class="card-text d-flex gap-2 align-items-center">
+                            Jarak: <span class="d-flex"><ion-icon class="text-danger" name="location"></ion-icon></span> <span class="fw-bold" id="jarak-{{ loop.index }}"></span>
+                        </div>
+                        <div class="card-text d-flex gap-2 align-items-center">
+                            Waktu Tempuh: <span class="d-flex"><ion-icon class="text-primary" name="time"></ion-icon></span> <span class="fw-bold" id="waktu-{{ loop.index }}"></span>
+                        </div>
+                    </div>
+                    <a href="#" class="btn btn-light d-flex align-items-center fs-3" onclick="showTPSDetails({{ tps.latitude|float }}, {{ tps.longitude|float }}, '{{ tps.nama }}')"><ion-icon name="chevron-forward"></ion-icon></a>
+                </div>
+            </div>
+            {% endfor %}
+            <hr />
+            <p class="fw-bold h5">Artikel</p>
+            <div id="articleCarousel" class="carousel slide">
+                <div class="carousel-inner">
+                    <div class="carousel-item active">
+                        {% for articles in artikel %}
+                        <div class="card card-body rounded-4 shadow">
+                            <p class="fw-bold h5 mb-0">{{ articles.judul }}</p>
+                            <hr />
+                            <div class="col text-truncate mb-3">
+                                <div class="truncate-multi-line">{{ articles.konten | safe }}</div>
                             </div>
-                            <div class="modal-body">
-                                <p class="mb-0">{{ articles.konten | safe }}</p>
+                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#artikel{{ articles.id }}">Baca Selengkapnya</button>
+                            <!-- Modal -->
+                            <div class="modal fade" id="artikel{{ articles.id }}" tabindex="-1" aria-labelledby="artikel{{ articles.id }}Label" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h1 class="modal-title fs-5" id="artikel{{ articles.id }}Label">{{ articles.judul }}</h1>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <img class="mb-3 img-fluid w-100" src="{{ articles.thumbnail }}" alt="Profile Picture" style="width: 120px" />
+                                            <p class="mb-0">{{ articles.konten | safe }}</p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#articleCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#articleCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+
+            <!-- Modal untuk menampilkan peta -->
+            <div class="modal fade" id="tpsDetailModal" tabindex="-1" aria-labelledby="tpsDetailModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="tpsDetailModalLabel">Lokasi TPS</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="map-wrapper-outer" class="d-flex justify-content-center align-items-center">
+                                <div id="map-wrapper-inner">
+                                    <div id="tps-detail-map"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            {% endfor %}
-        </div>
-    </div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
-        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-        <span class="visually-hidden">Previous</span>
-    </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
-        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-        <span class="visually-hidden">Next</span>
-    </button>
-</div>
-
-<!-- Modal untuk menampilkan peta -->
-<div class="modal fade" id="tpsDetailModal" tabindex="-1" aria-labelledby="tpsDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="tpsDetailModalLabel">Lokasi TPS</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="map-wrapper-outer" class="d-flex justify-content-center align-items-center">
-                    <div id="map-wrapper-inner">
-                        <div id="tps-detail-map"></div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
+{% endblock %}

@@ -1,28 +1,41 @@
-<p class="fw-bold">Artikel</p>
-{% for articles in artikel %}
-<div class="card card-body rounded-4 shadow">
-    <p class="fw-bold h5 mb-0">{{ articles.judul }}</p>
-    <hr />
-    <div class="col text-truncate mb-3">
-        <div class="truncate-multi-line">{{ articles.konten | safe }}</div>
-    </div>
-    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#artikel-{{ articles.id }}">Baca Selengkapnya</button>
-    <!-- Modal -->
-    <div class="modal fade" id="artikel-{{ articles.id }}" tabindex="-1" aria-labelledby="artikel-{{ articles.id }}Label" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="artikel-{{ articles.id }}Label">{{ articles.judul }}</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+{% extends 'base.html' %} {% block container %}
+<div class="container pt-3">
+    <div class="row">
+        <div class="col">
+            <p class="fw-bold h3 text-center">Artikel</p>
+            <hr />
+            {% for articles in artikel %}
+            <div class="card card-body rounded-4 shadow">
+                <p class="fw-bold h5 mb-0">{{ articles.judul }}</p>
+                <hr />
+                <img class="mb-3 img-fluid w-100" src="{{ articles.thumbnail }}" alt="Profile Picture" style="width: 120px" />
+
+                <div class="col text-truncate mb-3">
+                    <div class="truncate-multi-line">{{ articles.konten | safe }}</div>
                 </div>
-                <div class="modal-body">
-                    <p class="mb-0">{{ articles.konten | safe }}</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#artikel-{{ articles.id }}">Baca Selengkapnya</button>
+                <!-- Modal -->
+                <div class="modal fade" id="artikel-{{ articles.id }}" tabindex="-1" aria-labelledby="artikel-{{ articles.id }}Label" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="artikel-{{ articles.id }}Label">{{ articles.judul }}</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <img class="mb-3 img-fluid w-100" src="{{ articles.thumbnail }}" alt="Profile Picture" style="width: 120px" />
+
+                                <p class="mb-0">{{ articles.konten | safe }}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
     </div>
 </div>
-{% endfor %}
+{% endblock %}

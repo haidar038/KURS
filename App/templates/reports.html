@@ -1,0 +1,85 @@
+{% extends 'base.html' %} {% block container %}
+<div class="container pt-3">
+    <div class="row">
+        <div class="col">
+            <p class="fw-bold h3 text-center">Lapor Setoran Sampah</p>
+            <hr />
+            <form method="POST" action="{{ url_for('views.reports') }}" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="lokasi" class="form-label">Pilih Lokasi Sampah</label>
+                    <div id="report-map" style="height: 300px"></div>
+                    <input type="hidden" id="latitude" name="latitude" />
+                    <input type="hidden" id="longitude" name="longitude" />
+                </div>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-secondary" onclick="getLocation()">Gunakan Lokasi Saat Ini</button>
+                </div>
+                <div class="mb-3">
+                    <label for="foto" class="form-label">Upload Foto Sampah</label>
+                    <input type="file" class="form-control" id="foto" name="foto" accept="image/*" />
+                </div>
+                <div class="mb-3">
+                    <label for="berat" class="form-label">Berat Sampah (Kg)</label>
+                    <input type="number" class="form-control" id="berat" name="berat" min="0" step="0.1" required />
+                </div>
+                <div class="mb-3">
+                    <label for="jenis_sampah" class="form-label">Jenis Sampah</label>
+                    <select class="form-select" id="jenis_sampah" name="jenis_sampah" required>
+                        <option value="">Pilih Jenis Sampah</option>
+                        <option value="Organik">Organik</option>
+                        <option value="Anorganik">Anorganik</option>
+                        <option value="Campuran">Campuran</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success">Kirim Laporan</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+    mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q'; // Ganti dengan access token Mapbox Anda
+    var map = new mapboxgl.Map({
+        container: 'report-map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [107.6096, -6.9175], // Koordinat awal, sesuaikan dengan kebutuhan
+        zoom: 10,
+    });
+
+    var marker = new mapboxgl.Marker({
+        draggable: true,
+    })
+        .setLngLat([107.6096, -6.9175]) // Koordinat awal marker
+        .addTo(map);
+
+    function getLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(showPosition);
+        } else {
+            alert('Geolocation is not supported by this browser.');
+        }
+    }
+
+    map.resize();
+
+    function showPosition(position) {
+        map.flyTo({
+            center: [position.coords.longitude, position.coords.latitude],
+            zoom: 15,
+        });
+        marker.setLngLat([position.coords.longitude, position.coords.latitude]);
+
+        // Update hidden input fields
+        document.getElementById('latitude').value = position.coords.latitude;
+        document.getElementById('longitude').value = position.coords.longitude;
+    }
+
+    // Event listener untuk marker ketika dipindahkan
+    marker.on('dragend', function (event) {
+        var lngLat = event.target.getLngLat();
+        // Update hidden input fields
+        document.getElementById('latitude').value = lngLat.lat;
+        document.getElementById('longitude').value = lngLat.lng;
+    });
+</script>
+{% endblock %}

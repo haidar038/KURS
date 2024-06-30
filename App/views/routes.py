@@ -1,9 +1,18 @@
-from flask import Blueprint, render_template, send_file, request, redirect, flash, url_for
+from flask import Blueprint, render_template, send_file, request, redirect, flash, url_for, current_app
+from werkzeug.utils import secure_filename
 # Import other necessary modules and models
-from App.models import TPS, Artikel
+from App.models import TPS, Artikel, SampahDisetor
 from App import db
 
+import secrets, os
+
 views = Blueprint('views', __name__)
+
+PICTURE_ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+def picture_allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in PICTURE_ALLOWED_EXTENSIONS
 
 @views.route('/manifest.json')
 def serve_manifest():
@@ -15,13 +24,46 @@ def serve_sw():
 
 @views.route('/')
 def index():
-    data_tps = [
-        {"id": 1, "nama": "TPS Gambesi", "latitude": "0.7552107801638247", "longitude": "127.33604266194835"},
-    ]
     tps = TPS.query.all()
     artikel = Artikel.query.all()
 
-    return render_template('base.html', data_tps=data_tps, tps=tps, artikel=artikel, page='home')
+    return render_template('index.html', tps=tps, artikel=artikel, page='home')
+
+@views.route('/wiki', methods=['GET','POST'])
+def wiki():
+    artikel = Artikel.query.all()
+    return render_template('wiki.html', artikel=artikel, page='wiki') 
+
+@views.route('/reports', methods=['GET', 'POST'])
+# @login_required  # Pastikan pengguna sudah login
+def reports():
+    if request.method == 'POST':
+        # Ambil data dari formulir
+        latitude = request.form.get('latitude')
+        longitude = request.form.get('longitude')
+        foto = request.files.get('foto')
+        berat = request.form.get('berat')
+        jenis_sampah = request.form.get('jenis_sampah')
+
+        # ... (Lakukan validasi data di sini)
+
+        # Simpan data ke database
+        sampah_disetor = SampahDisetor(
+            masyarakat_id=1,
+            latitude=latitude,
+            longitude=longitude,
+            foto = foto,
+            berat = berat,
+            jenis_sampah = jenis_sampah
+            # ... (simpan data foto, berat, dan jenis_sampah)
+        )
+        db.session.add(sampah_disetor)
+        db.session.commit()
+
+        flash('Laporan berhasil dikirim!', 'success')
+        return redirect(url_for('views.index'))  # Redirect ke halaman yang sesuai
+
+    return render_template('reports.html')
 
 @views.route('/add_tps', methods=['GET','POST'])
 def add_tps_location():
@@ -54,35 +96,39 @@ def delete_tps(id):
     print('Berhasil Hapus Data TPS')
     redirect(url_for('views.add_tps_location'))
 
-@views.route('/posts', methods=['GET'])
+@views.route('/posts', methods=['GET', 'POST'])
 def posts():
-    posts = Artikel.query.all()
-    return render_template('posts.html', posts=posts)
+    if request.method == 'POST':
+        judul = request.form.get('judul')
+        konten = request.form.get('ckeditor')
+        thumbnail = request.files.get('thumbnail')
+
+        if thumbnail and picture_allowed_file(thumbnail.filename):
+            filename = secure_filename(thumbnail.filename)
+            thumbnail_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            thumbnail.save(thumbnail_path)
+            thumbnail_db_path = '/static/uploads/' + filename # Simpan path ke database
+        else:
+            thumbnail_db_path = None  # Tidak ada thumbnail
+
+        add_post = Artikel(judul=judul, konten=konten, thumbnail=thumbnail_db_path)
+        db.session.add(add_post)
+        db.session.commit()
+
+        flash('Berhasil membuat artikel!', 'success')
+        return redirect(url_for('views.posts'))
+
+    post = Artikel.query.all()
+    return render_template('post.html', post=post)
 
 @views.route('/posts/read_posts/<int:id>', methods=['GET'])
 def read_post(id):
     posts = Artikel.query.get_or_404(id)
-    return render_template('posts.html', posts=posts)
-
-@views.route('/posts/write_post', methods=['POST', 'GET'])
-def write_post():
-    post = Artikel.query.all()
-
-    if request.method == 'POST':
-        judul = request.form.get('judul')
-        konten = request.form.get('ckeditor')
-
-        add_post = Artikel(judul=judul, konten=konten)
-        db.session.add(add_post)
-        db.session.commit()
-        flash('Berhasil membuat artikel!', 'success')
-        print('Berhasil membuat artikel!')
-        return redirect(url_for('views.write_post'))
-    return render_template('write_post.html', post=post)
+    return render_template('post.html', posts=posts)
 
 @views.route('/posts/update/<int:id>', methods=['POST', 'GET'])
 def update_post():
-    return render_template('write_post.html')
+    return render_template('post.html')
 
 @views.route('/posts/delete/<int:id>', methods=['POST', 'GET'])
 def delete_post(id):
@@ -90,4 +136,13 @@ def delete_post(id):
     db.session.delete(post)
     db.session.commit()
     flash(f'Postingan dengan judul {post.judul} dihapus!', 'danger')
-    return redirect(url_for('views.write_post'))
+    return redirect(url_for('views.posts'))
+
+# ==================== USER LEGAL INFORMATIONS ====================
+@views.route('/terms_of_use')
+def terms_of_use():
+    return render_template('terms_of_use.html')
+
+@views.route('/privacy_policy')
+def privacy_policy():
+    return render_template('privacy_policy.html')

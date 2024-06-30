@@ -60,29 +60,16 @@
                                 <a class="nav-link {% if page == 'home' %} active {% endif %}" aria-current="page" href="{{ url_for('views.index' ) }}">Beranda</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="#">Wiki</a>
+                                <a class="nav-link" href="{{ url_for('views.wiki' ) }}">Wiki</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="#">Laporan</a>
+                                <a class="nav-link" href="{{ url_for('views.reports' ) }}">Laporan</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="#">Riwayat</a>
                             </li>
                         </ul>
-                        <!-- <form class="d-flex mb-2 mb-lg-0" role="search">
-                                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" />
-                                    <button class="btn btn-outline-light" type="submit">Search</button>
-                                </form> -->
                         <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-3">
-                            <!-- <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"> Profil </a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#">Action</a></li>
-                                    <li><a class="dropdown-item" href="#">Another action</a></li>
-                                    <li><hr class="dropdown-divider" /></li>
-                                    <li><a class="dropdown-item" href="#">Something else here</a></li>
-                                </ul>
-                            </li> -->
                             <li class="nav-item">
                                 <a href="#" class="nav-link">Login</a>
                             </li>
@@ -96,120 +83,74 @@
         </head>
 
         <main style="padding-bottom: 65px" class="{% if page == 'add_tps' %} pb-2 {% endif %}">
-            <div class="tab-content my-2 {% if page == 'add_tps' %} d-none {% endif %}" id="navTabContent">
-                <div class="tab-pane fade show active" id="home-tab-pane" role="tabpanel" aria-labelledby="home-tab" tabindex="0">
-                    <div class="container">
-                        <div class="row">
-                            <div class="col">{% include 'index.html' %}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="wiki-tab-pane" role="tabpanel" aria-labelledby="wiki-tab" tabindex="0">
-                    <div class="container">
-                        <div class="row">
-                            <div class="col">{% include 'wiki.html' %}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="report-tab-pane" role="tabpanel" aria-labelledby="report-tab" tabindex="0">
-                    <div class="container">
-                        <div class="row">
-                            <div class="col">Report</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="history-tab-pane" role="tabpanel" aria-labelledby="history-tab" tabindex="0">
-                    <div class="container">
-                        <div class="row">
-                            <div class="col">History</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="tab-pane fade" id="profile-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
-                    <div class="container">
-                        <div class="row">
-                            <div class="col">Profile</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
             <ul class="nav nav-pills w-100 bottom-0 bg-success navbar-dark d-flex d-lg-none {% if page == 'add_tps' %} d-none {% endif %}" id="navTab" role="tablist">
                 <li class="nav-item flex-fill" role="presentation">
-                    <button
+                    <a
+                        href="{{ url_for('views.index' ) }}"
                         class="nav-link rounded-0 d-flex flex-column justify-content-center align-items-center {% if page == 'home' %} active {% endif %}"
                         id="home-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#home-tab-pane"
                         type="button"
                         role="tab"
-                        aria-controls="home-tab-pane"
                         aria-selected="false"
                     >
                         <ion-icon name="home"></ion-icon>
                         <small>Home</small>
-                    </button>
+                    </a>
                 </li>
                 <li class="nav-item flex-fill" role="presentation">
-                    <button
+                    <a
+                        href="{{ url_for('views.wiki' ) }}"
                         class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'wiki' %} active {% endif %}"
                         id="wiki-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#wiki-tab-pane"
                         type="button"
                         role="tab"
-                        aria-controls="wiki-tab-pane"
                         aria-selected="false"
                     >
                         <ion-icon name="book"></ion-icon>
                         <small>Wiki</small>
-                    </button>
+                    </a>
                 </li>
                 <li class="nav-item flex-fill" role="presentation">
-                    <button
+                    <a
+                        href="{{ url_for('views.reports' ) }}"
                         class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'report' %} active {% endif %}"
                         id="report-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#report-tab-pane"
                         type="button"
                         role="tab"
-                        aria-controls="report-tab-pane"
                         aria-selected="false"
                     >
                         <ion-icon name="location"></ion-icon>
                         <small>Report</small>
-                    </button>
+                    </a>
                 </li>
                 <li class="nav-item flex-fill" role="presentation">
-                    <button
+                    <a
+                        href="#"
                         class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'history' %} active {% endif %}"
                         id="history-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#history-tab-pane"
                         type="button"
                         role="tab"
-                        aria-controls="history-tab-pane"
                         aria-selected="false"
                     >
                         <ion-icon name="time"></ion-icon>
                         <small>History</small>
-                    </button>
+                    </a>
                 </li>
                 <li class="nav-item flex-fill" role="presentation">
-                    <button
+                    <a
+                        href="#"
                         class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'profile' %} active {% endif %}"
                         id="profile-tab"
-                        data-bs-toggle="tab"
-                        data-bs-target="#profile-tab-pane"
                         type="button"
                         role="tab"
-                        aria-controls="profile-tab-pane"
                         aria-selected="false"
                     >
                         <ion-icon name="person"></ion-icon>
                         <small>Profile</small>
-                    </button>
+                    </a>
                 </li>
             </ul>
+            {% block container %} {% endblock %}
         </main>
 
         <script defer src="{{ url_for('static', filename='main.js' ) }}"></script>
@@ -244,7 +185,10 @@
             });
         </script>
 
+        {% block scripts %} {% endblock %}
+
         <!-- MAPS API SCRIPT -->
+        {% if page == 'home' %}
         <script>
             var dataTPS = JSON.parse('{{ data_tps | tojson | safe }}');
             var detailMap;
@@ -354,5 +298,6 @@
             // Panggil fungsi untuk mendapatkan lokasi pengguna saat halaman dimuat
             getUserLocation();
         </script>
+        {% endif %}
     </body>
 </html>

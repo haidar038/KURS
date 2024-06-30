@@ -1,12 +1,13 @@
-from flask import Flask, render_template, redirect, url_for, flash, request
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 from App import db, login_manager
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    nama = db.Column(db.String(255), nullable=True)
+    email = db.Column(db.String(255), nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     user_type = db.Column(db.String(20), nullable=False)  # 'masyarakat' atau 'petugas'
@@ -85,8 +86,28 @@ class Laporan(db.Model):
 
 class Artikel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    thumbnail = db.Column(db.String(255), nullable=True)
     judul = db.Column(db.String(255), nullable=False)
     konten = db.Column(db.Text(), nullable=False)
+
+# === Model Baru untuk Faktor Emisi CO2 ===
+class FaktorEmisiCO2(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    jenis_sampah = db.Column(db.String(50), unique=True, nullable=False)
+    faktor_co2 = db.Column(db.Float, nullable=False)  # CO2 yang dihemat per kg
+
+# === Model Baru untuk Sampah yang Disetor ===
+class SampahDisetor(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    masyarakat_id = db.Column(db.Integer, db.ForeignKey('masyarakat.user_id'), nullable=False)
+    foto = db.Column(db.String(255), nullable=False)
+    berat = db.Column(db.Float, nullable=False)  # Dalam kilogram
+    latitude = db.Column(db.Float, nullable=True)  # Tambahkan atribut latitude
+    longitude = db.Column(db.Float, nullable=True)  # Tambahkan atribut longitude
+    jenis_sampah = db.Column(db.String(50), nullable=False)
+    tanggal_setor = db.Column(db.DateTime, default=datetime.now)
+
+    masyarakat = db.relationship('Masyarakat', backref='sampah_disetor')
 
 @login_manager.user_loader
 def load_user(user_id):
