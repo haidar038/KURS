@@ -7,6 +7,12 @@
             <h1 class="fw-bold mb-3 text-center">Tambah Lokasi TPS</h1>
             <div class="card card-body rounded-4 shadow mb-3">
                 <form action="" method="post">
+                    {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+                    <div class="alert d-flex alert-dismissable fade show mb-3 alert-{{ category }}" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %} {% endif %} {% endwith %}
                     <div class="form-floating mb-3">
                         <input type="text" class="form-control" id="nama_tps" name="nama_tps" placeholder="Nama TPS" required />
                         <label for="nama_tps">Nama TPS</label>

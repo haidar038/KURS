@@ -1,0 +1,184 @@
+{% extends 'base.html' %} {% block container %}
+<div class="container pt-3">
+    <div class="row">
+        <div class="col">
+            <p class="fw-bold h3 text-center">Lapor Setoran Sampah</p>
+            <hr />
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">TPS Tujuan</th>
+                            <th scope="col">Tanggal</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Info Lokasi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if data_laporan %} {% for item in data_laporan %}
+                        <tr class="align-middle">
+                            <th scope="row">{{ loop.index }}</th>
+                            <td>{{ item.nama_tps | default('Belum Ada') }}</td>
+                            <td>{{ item.tanggal_laporan }}</td>
+                            <td>{% if item.status == '1' %} Belum Konfirmasi {% elif item.status == '2' %} Proses {% else %} Selesai {% endif %}</td>
+                            <td>
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <a href="#" class="btn btn-light align-middle d-flex align-items-center fs-3" onclick="showTPSDetails({{ loop.index0 }})"><ion-icon name="chevron-forward"></ion-icon></a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %} {% else %}
+                        <tr class="align-middle">
+                            <td scope="row" colspan="4" class="text-center text-secondary"><em>-- Belum ada riwayat --</em></td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal untuk menampilkan peta -->
+<div class="modal fade" id="tpsDetailModal" tabindex="-1" aria-labelledby="tpsDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tpsDetailModalLabel">Info Lokasi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="map-wrapper-outer" class="d-flex justify-content-center align-items-center">
+                    <div id="map-wrapper-inner">
+                        <div id="tps-detail-map"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+    let status = JSON.parse('{{ status | safe }}');
+    let lat_tps = JSON.parse('{{ lat_tps | safe }}');
+    let long_tps = JSON.parse('{{ long_tps | safe }}');
+    var detailMap;
+
+    let data_tps = status.map((status, index) => ({
+        status: status,
+        latitude: parseFloat(lat_tps[index]),
+        longitude: parseFloat(long_tps[index]),
+    }));
+
+    console.log(status);
+    console.log(lat_tps);
+    console.log(long_tps);
+
+    // Inisialisasi peta Mapbox di luar fungsi showTPSDetails
+    mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q';
+    const map = new mapboxgl.Map({
+        container: 'tps-detail-map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [long_tps, lat_tps], // Atur koordinat awal, misalnya Jakarta
+        zoom: 10,
+    });
+    let marker;
+
+    // Fungsi untuk menampilkan detail TPS dan peta
+    function showTPSDetails(index) {
+        const tps = data_tps[index];
+
+        // Set judul modal dengan nama TPS
+        $('#tpsDetailModalLabel').text('Lokasi Anda');
+
+        // Update posisi peta dan marker
+        map.flyTo({
+            center: [tps.longitude, tps.latitude],
+            zoom: 15,
+        });
+
+        // Hapus marker lama jika ada
+        if (marker) {
+            marker.remove();
+        }
+
+        // Tambahkan marker baru
+        marker = new mapboxgl.Marker().setLngLat([tps.longitude, tps.latitude]).addTo(map);
+
+        // Tampilkan modal
+        $('#tpsDetailModal').modal('show');
+    }
+
+    $('#tpsDetailModal').on('shown.bs.modal', function () {
+        // Memaksa Mapbox untuk menggambar ulang peta dan menyesuaikan ukuran canvas
+        map.resize();
+    });
+
+    // Fungsi untuk mendapatkan lokasi pengguna
+    function getUserLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(showPosition, showError);
+        } else {
+            console.error('Geolocation is not supported by this browser.');
+        }
+    }
+
+    // Fungsi yang dijalankan jika izin diberikan
+    function showPosition(position) {
+        // Koordinat pengguna
+        var userLat = position.coords.latitude;
+        var userLon = position.coords.longitude;
+
+        console.log('Latitude: ' + userLat + ', Longitude: ' + userLon);
+
+        // Loop melalui data TPS
+        for (let i = 0; i < data_tps.length; i++) {
+            const tps = data_tps[i];
+
+            // Konversi latitude dan longitude ke float
+            var tpsLat = parseFloat(tps.latitude);
+            var tpsLon = parseFloat(tps.longitude);
+
+            var jarak = calculateDistance(userLat, userLon, tpsLat, tpsLon);
+            var waktuTempuh = hitungWaktuTempuh(jarak);
+
+            // Tampilkan jarak dan waktu tempuh di dalam card
+            $('#jarak-' + (i + 1)).text(jarak.toFixed(2) + ' km');
+            $('#waktu-' + (i + 1)).text(waktuTempuh);
+        }
+    }
+
+    // Fungsi yang dijalankan jika terjadi error
+    function showError(error) {
+        console.error('Error getting user location:', error);
+        // Tampilkan pesan error kepada pengguna atau gunakan data lokasi default
+    }
+
+    // Fungsi untuk menghitung jarak antara dua titik koordinat (dalam kilometer)
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        var R = 6371; // Radius bumi dalam kilometer
+        var dLat = deg2rad(lat2 - lat1);
+        var dLon = deg2rad(lon2 - lon1);
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        var d = R * c; // Jarak dalam kilometer
+        return d;
+    }
+
+    function deg2rad(deg) {
+        return deg * (Math.PI / 180);
+    }
+
+    // Contoh fungsi untuk menghitung waktu tempuh (ganti dengan logika Anda)
+    function hitungWaktuTempuh(jarak) {
+        // Asumsi kecepatan rata-rata 40 km/jam
+        var waktuJam = jarak / 40;
+        var waktuMenit = Math.round(waktuJam * 60);
+        return waktuMenit + ' menit';
+    }
+
+    // Panggil fungsi untuk mendapatkan lokasi pengguna saat halaman dimuat
+    getUserLocation();
+</script>
+{% endblock %}

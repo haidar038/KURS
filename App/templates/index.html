@@ -18,13 +18,19 @@
                     </div>
                 </div>
             </div>
+            {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+            <div class="alert d-flex alert-dismissable fade show mb-3 alert-{{ category }}" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %} {% endif %} {% endwith %}
             <hr />
             <p class="fw-bold h5">Lokasi TPS Terdekat</p>
-            {% for tps in data_tps %}
+            {% for data_tps in tps %}
             <div class="card card-body rounded-4 shadow-sm mb-3">
                 <div class="d-flex justify-content-between">
                     <div>
-                        <h5 class="card-title">{{ tps.nama }}</h5>
+                        <h5 class="card-title">{{ data_tps.nama }}</h5>
                         <div class="card-text d-flex gap-2 align-items-center">
                             Jarak: <span class="d-flex"><ion-icon class="text-danger" name="location"></ion-icon></span> <span class="fw-bold" id="jarak-{{ loop.index }}"></span>
                         </div>
@@ -32,7 +38,7 @@
                             Waktu Tempuh: <span class="d-flex"><ion-icon class="text-primary" name="time"></ion-icon></span> <span class="fw-bold" id="waktu-{{ loop.index }}"></span>
                         </div>
                     </div>
-                    <a href="#" class="btn btn-light d-flex align-items-center fs-3" onclick="showTPSDetails({{ tps.latitude|float }}, {{ tps.longitude|float }}, '{{ tps.nama }}')"><ion-icon name="chevron-forward"></ion-icon></a>
+                    <a href="#" class="btn btn-light d-flex align-items-center fs-3" onclick="showTPSDetails({{ loop.index0 }})"><ion-icon name="chevron-forward"></ion-icon></a>
                 </div>
             </div>
             {% endfor %}

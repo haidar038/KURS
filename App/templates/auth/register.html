@@ -3,11 +3,6 @@
     <div class="row h-100">
         <div class="col h-100 d-flex align-items-center">
             <div class="card card-body text-bg-light">
-                <!-- FLASH MESSAGE -->
-                {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
-                <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                {% endfor %} {% endif %} {% endwith %}
                 <h1 class="text-center mb-3">Register</h1>
                 <form method="POST" action="">
                     <div class="mb-3">
@@ -24,6 +19,13 @@
                         <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Ulangi Kata Sandi" />
                         <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button"><i class="fa-solid fa-eye" id="toggleConfirmPassword" style="cursor: pointer"></i></button>
                     </div>
+                    <!-- FLASH MESSAGE -->
+                    {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+                    <div class="alert d-flex align-items-center alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %} {% endif %} {% endwith %}
                     <p class="text-center mb-3">
                         Anda menyatakan bahwa sudah menyetujui <a href="#" class="link-success fw-bold">Privacy Policy</a> dan <a href="{{ url_for('views.terms_of_use' ) }}" class="link-success fw-bold">Terms of Use</a> dengan mengklik
                         "Bergabung"

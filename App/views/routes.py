@@ -1,14 +1,18 @@
 from flask import Blueprint, render_template, send_file, request, redirect, flash, url_for, current_app
 from werkzeug.utils import secure_filename
+from flask_login import current_user, login_required
 # Import other necessary modules and models
-from App.models import TPS, Artikel, SampahDisetor
+from App.models import TPS, Artikel, Laporan
 from App import db
 
-import secrets, os
+import secrets, os, json
 
 views = Blueprint('views', __name__)
 
 PICTURE_ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in PICTURE_ALLOWED_EXTENSIONS
 
 def picture_allowed_file(filename):
     return '.' in filename and \
@@ -27,7 +31,11 @@ def index():
     tps = TPS.query.all()
     artikel = Artikel.query.all()
 
-    return render_template('index.html', tps=tps, artikel=artikel, page='home')
+    nama_tps = [namaTPS.nama for namaTPS in tps]
+    lat_tps = [latTPS.latitude for latTPS in tps]
+    long_tps = [longTPS.longitude for longTPS in tps]
+
+    return render_template('index.html', nama_tps=json.dumps(nama_tps), lat_tps=json.dumps(lat_tps), long_tps=json.dumps(long_tps), tps=tps, artikel=artikel, page='home')
 
 @views.route('/wiki', methods=['GET','POST'])
 def wiki():
@@ -35,7 +43,7 @@ def wiki():
     return render_template('wiki.html', artikel=artikel, page='wiki') 
 
 @views.route('/reports', methods=['GET', 'POST'])
-# @login_required  # Pastikan pengguna sudah login
+@login_required
 def reports():
     if request.method == 'POST':
         # Ambil data dari formulir
@@ -45,25 +53,47 @@ def reports():
         berat = request.form.get('berat')
         jenis_sampah = request.form.get('jenis_sampah')
 
-        # ... (Lakukan validasi data di sini)
+        # Validasi data
+        if not foto or not allowed_file(foto.filename):
+            flash('File foto tidak valid!', 'danger')
+            return redirect(url_for('views.reports'))
 
-        # Simpan data ke database
-        sampah_disetor = SampahDisetor(
-            masyarakat_id=1,
+        # Simpan foto
+        filename = secure_filename(foto.filename)
+        foto.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
+
+        # Simpan data ke database (Model Laporan)
+        laporan = Laporan(
+            masyarakat_id=current_user.user_id,
             latitude=latitude,
             longitude=longitude,
-            foto = foto,
-            berat = berat,
-            jenis_sampah = jenis_sampah
-            # ... (simpan data foto, berat, dan jenis_sampah)
+            foto=f'/static/uploads/{filename}',
+            berat=berat,
+            jenis_sampah=jenis_sampah
         )
-        db.session.add(sampah_disetor)
+        db.session.add(laporan)
         db.session.commit()
 
         flash('Laporan berhasil dikirim!', 'success')
-        return redirect(url_for('views.index'))  # Redirect ke halaman yang sesuai
+        return redirect(url_for('views.index'))
 
-    return render_template('reports.html')
+    return render_template('reports.html', page='reports')
+
+@views.route('/riwayat', methods=['GET', 'POST'])
+@login_required
+def history():
+    data_laporan = Laporan.query.filter_by(masyarakat_id=current_user.user_id).all()
+
+    status = [laporan.status for laporan in data_laporan]
+    lat_tps = [laporan.latitude for laporan in data_laporan]
+    long_tps = [laporan.longitude for laporan in data_laporan]
+
+    return render_template('history.html', 
+                           data_laporan=data_laporan, 
+                           status=json.dumps(status), 
+                           lat_tps=json.dumps(lat_tps), 
+                           long_tps=json.dumps(long_tps), 
+                           page='history')
 
 @views.route('/add_tps', methods=['GET','POST'])
 def add_tps_location():
@@ -87,7 +117,7 @@ def add_tps_location():
 
     return render_template('add_tps_location.html', page='add_tps', tps=tps)
 
-@views.route('/delete_tps/<int:id>', methods=['POST','GET'])
+@views.route('/delete_tps/<string:id>', methods=['POST','GET'])
 def delete_tps(id):
     tps = TPS.query.get_or_404(id)
     db.session.delete(tps)
@@ -121,16 +151,16 @@ def posts():
     post = Artikel.query.all()
     return render_template('post.html', post=post)
 
-@views.route('/posts/read_posts/<int:id>', methods=['GET'])
+@views.route('/posts/read_posts/<string:id>', methods=['GET'])
 def read_post(id):
     posts = Artikel.query.get_or_404(id)
     return render_template('post.html', posts=posts)
 
-@views.route('/posts/update/<int:id>', methods=['POST', 'GET'])
+@views.route('/posts/update/<string:id>', methods=['POST', 'GET'])
 def update_post():
     return render_template('post.html')
 
-@views.route('/posts/delete/<int:id>', methods=['POST', 'GET'])
+@views.route('/posts/delete/<string:id>', methods=['POST', 'GET'])
 def delete_post(id):
     post = Artikel.query.get_or_404(id)
     db.session.delete(post)
