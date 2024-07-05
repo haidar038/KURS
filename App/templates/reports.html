@@ -1,5 +1,5 @@
 {% extends 'base.html' %} {% block container %}
-<div class="container pt-3">
+<div class="container pt-3 mb-2">
     <div class="row">
         <div class="col">
             <p class="fw-bold h3 text-center">Lapor Setoran Sampah</p>
@@ -19,7 +19,7 @@
                     <input type="file" class="form-control" id="foto" name="foto" accept="image/*" />
                 </div>
                 <div class="mb-3">
-                    <label for="berat" class="form-label">Berat Sampah (Kg)</label>
+                    <label for="berat" class="form-label">Estimasi Volume (Kg)</label>
                     <input type="number" class="form-control" id="berat" name="berat" min="0" step="0.1" required />
                 </div>
                 <div class="mb-3">
@@ -38,18 +38,18 @@
 </div>
 {% endblock %} {% block scripts %}
 <script>
-    mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q'; // Ganti dengan access token Mapbox Anda
+    mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q';
     const map = new mapboxgl.Map({
         container: 'report-map',
         style: 'mapbox://styles/mapbox/streets-v11',
-        center: [107.6096, -6.9175], // Koordinat awal, sesuaikan dengan kebutuhan
+        center: [107.6096, -6.9175],
         zoom: 10,
     });
 
     var marker = new mapboxgl.Marker({
         draggable: true,
     })
-        .setLngLat([107.6096, -6.9175]) // Koordinat awal marker
+        .setLngLat([107.6096, -6.9175])
         .addTo(map);
 
     function getLocation() {
@@ -60,8 +60,6 @@
         }
     }
 
-    map.resize();
-
     function showPosition(position) {
         map.flyTo({
             center: [position.coords.longitude, position.coords.latitude],
@@ -69,17 +67,31 @@
         });
         marker.setLngLat([position.coords.longitude, position.coords.latitude]);
 
-        // Update hidden input fields
         document.getElementById('latitude').value = position.coords.latitude;
         document.getElementById('longitude').value = position.coords.longitude;
     }
 
-    // Event listener untuk marker ketika dipindahkan
     marker.on('dragend', function (event) {
         var lngLat = event.target.getLngLat();
-        // Update hidden input fields
         document.getElementById('latitude').value = lngLat.lat;
         document.getElementById('longitude').value = lngLat.lng;
     });
+
+    map.on('click', function (e) {
+        if (marker) {
+            marker.remove();
+        }
+
+        marker = new mapboxgl.Marker({
+            draggable: true,
+        })
+            .setLngLat([e.lngLat.lng, e.lngLat.lat])
+            .addTo(map);
+
+        document.getElementById('latitude').value = e.lngLat.lat;
+        document.getElementById('longitude').value = e.lngLat.lng;
+    });
+
+    map.resize();
 </script>
 {% endblock %}

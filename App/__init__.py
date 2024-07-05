@@ -20,6 +20,11 @@ buffer = io.BytesIO()
 migrate = Migrate(app, db)
 load_dotenv()
 
+UPLOAD_FOLDER = 'App/static/img/profile'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True) # Membuat folder jika belum ada
+
 def create_app():
     UPLOAD_FOLDER = os.path.join(app.root_path, 'static/uploads')
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Pastikan folder ada
@@ -40,21 +45,31 @@ def create_app():
 
     # from .admin.routes import admin_page
     from .Authentication.routes import auth
+    from .Officer.routes import officer
     from .views.routes import views
 
     app.register_blueprint(auth, url_prefix='/')
     app.register_blueprint(views, url_prefix='/')
+    app.register_blueprint(officer, url_prefix='/')
 
     login_manager.login_view = 'auth.login'
 
-    from .models import AppAdmin
+    from .models import AppAdmin, User
 
     with app.app_context():
         db.create_all()
 
         if not AppAdmin.query.first():
-            admin_query = AppAdmin(username='admin', password_hash=generate_password_hash('admkurs123', method='pbkdf2'))
-            db.session.add(admin_query)
-            db.session.commit()
+            try:
+                account_type = User(user_type='admin')
+                db.session.add(account_type)
+                db.session.flush()
+
+                admin_data = AppAdmin(id=account_type.id, username='admin', password_hash=generate_password_hash('admkurs123', method='pbkdf2'))
+                db.session.add(admin_data)
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error during adding admin data: {e}")
 
     return app

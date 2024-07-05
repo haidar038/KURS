@@ -50,6 +50,7 @@ class Masyarakat(db.Model, UserMixin):
     password_hash = db.Column(db.String(128), nullable=False)
     alamat = db.Column(db.Text, nullable=False)
     no_telepon = db.Column(db.String(20), nullable=False)
+    foto_profil = db.Column(db.String(255), nullable=True)
     # ...atribut lain
 
     def get_id(self):
@@ -73,6 +74,7 @@ class Petugas(db.Model, UserMixin):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     area_tugas = db.Column(db.String(100), nullable=False)
+    no_telepon = db.Column(db.String(20), nullable=False)
     # ...atribut lain
 
     def get_id(self):
@@ -92,6 +94,8 @@ class Petugas(db.Model, UserMixin):
 class Laporan(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     masyarakat_id = db.Column(db.String(36), db.ForeignKey('masyarakat.user_id'), nullable=False)
+    petugas_id = db.Column(db.String(36), db.ForeignKey('petugas.user_id'), nullable=True)
+    tps_id = db.Column(db.String(36), db.ForeignKey('tps.id'), nullable=True)
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
     tanggal_laporan = db.Column(db.DateTime, default=datetime.now)
@@ -101,6 +105,8 @@ class Laporan(db.Model):
     jenis_sampah = db.Column(db.String(50), nullable=True)
 
     masyarakat = db.relationship('Masyarakat', backref='laporan')
+    petugas = db.relationship('Petugas', backref='laporan')  # Relasi ke model Petugas
+    tps = db.relationship('TPS', backref='laporan')  # Relasi ke model Petugas
 
 class Artikel(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -126,18 +132,3 @@ class FaktorEmisiCO2(db.Model):
 #     tanggal_setor = db.Column(db.DateTime, default=datetime.now)
 
 #     masyarakat = db.relationship('Masyarakat', backref='sampah_disetor')
-
-@login_manager.user_loader
-def load_user(user_id):
-    # Cari user berdasarkan user_id
-    user = User.query.get(user_id)
-
-    # Jika user ditemukan, kembalikan objek Masyarakat atau Petugas
-    if user:
-        if user.user_type == 'masyarakat':
-            return user.masyarakat
-        elif user.user_type == 'petugas':
-            return user.petugas
-
-    # Jika user tidak ditemukan, kembalikan None
-    return None

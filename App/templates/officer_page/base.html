@@ -30,6 +30,7 @@
 
         <!-- LIBRARIES -->
         <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
         <script
             src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
             integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
@@ -87,8 +88,8 @@
             <ul class="nav nav-pills w-100 bottom-0 bg-success navbar-dark d-flex d-lg-none {% if page == 'add_tps' %} d-none {% endif %}" id="navTab" role="tablist">
                 <li class="nav-item flex-fill" role="presentation">
                     <a
-                        href="{{ url_for('views.index' ) }}"
-                        class="nav-link rounded-0 d-flex flex-column justify-content-center align-items-center {% if page == 'home' %} active {% endif %}"
+                        href="{{ url_for('officer.index' ) }}"
+                        class="nav-link rounded-0 d-flex flex-column justify-content-center align-items-center {% if page == 'officer_home' %} active {% endif %}"
                         id="home-tab"
                         type="button"
                         role="tab"
@@ -100,46 +101,33 @@
                 </li>
                 <li class="nav-item flex-fill" role="presentation">
                     <a
-                        href="{{ url_for('views.wiki' ) }}"
-                        class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'wiki' %} active {% endif %}"
+                        href="{{ url_for('officer.reports_list' ) }}"
+                        class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page_name == 'reports' %} active {% endif %}"
                         id="wiki-tab"
                         type="button"
                         role="tab"
                         aria-selected="false"
                     >
-                        <ion-icon name="book"></ion-icon>
-                        <small>Wiki</small>
+                        <ion-icon name="flag"></ion-icon>
+                        <small>Laporan</small>
                     </a>
                 </li>
                 <li class="nav-item flex-fill" role="presentation">
                     <a
-                        href="{{ url_for('views.reports' ) }}"
-                        class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'reports' %} active {% endif %}"
-                        id="report-tab"
-                        type="button"
-                        role="tab"
-                        aria-selected="false"
-                    >
-                        <ion-icon name="location"></ion-icon>
-                        <small>Report</small>
-                    </a>
-                </li>
-                <li class="nav-item flex-fill" role="presentation">
-                    <a
-                        href="{{ url_for('views.history' ) }}"
-                        class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'history' %} active {% endif %}"
+                        href="{{ url_for('officer.riwayat_laporan' ) }}"
+                        class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page_name == 'riwayat' %} active {% endif %}"
                         id="history-tab"
                         type="button"
                         role="tab"
                         aria-selected="false"
                     >
                         <ion-icon name="time"></ion-icon>
-                        <small>History</small>
+                        <small>Riwayat</small>
                     </a>
                 </li>
                 <li class="nav-item flex-fill" role="presentation">
                     <a
-                        href="{{ url_for('views.profil', id=current_user.user_id ) }}"
+                        href="{{ url_for('officer.profile', id=current_user.user_id ) }}"
                         class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'profile' %} active {% endif %}"
                         id="profile-tab"
                         type="button"
@@ -188,134 +176,5 @@
         </script>
 
         {% block scripts %} {% endblock %}
-
-        <!-- MAPS API SCRIPT -->
-        {% if page == 'home' %}
-        <script>
-            let nama_tps = JSON.parse('{{ nama_tps | safe }}');
-            let lat_tps = JSON.parse('{{ lat_tps | safe }}');
-            let long_tps = JSON.parse('{{ long_tps | safe }}');
-            var detailMap;
-
-            let data_tps = nama_tps.map((nama, index) => ({
-                nama: nama,
-                latitude: parseFloat(lat_tps[index]),
-                longitude: parseFloat(long_tps[index]),
-            }));
-
-            console.log(nama_tps);
-            console.log(lat_tps);
-            console.log(long_tps);
-
-            // Inisialisasi peta Mapbox di luar fungsi showTPSDetails
-            mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q';
-            const map = new mapboxgl.Map({
-                container: 'tps-detail-map',
-                style: 'mapbox://styles/mapbox/streets-v11',
-                center: [long_tps, lat_tps], // Atur koordinat awal, misalnya Jakarta
-                zoom: 10,
-            });
-            let marker;
-
-            // Fungsi untuk menampilkan detail TPS dan peta
-            function showTPSDetails(index) {
-                const tps = data_tps[index];
-
-                // Set judul modal dengan nama TPS
-                $('#tpsDetailModalLabel').text('Lokasi TPS: ' + tps.nama);
-
-                // Update posisi peta dan marker
-                map.flyTo({
-                    center: [tps.longitude, tps.latitude],
-                    zoom: 15,
-                });
-
-                // Hapus marker lama jika ada
-                if (marker) {
-                    marker.remove();
-                }
-
-                // Tambahkan marker baru
-                marker = new mapboxgl.Marker()
-                    .setLngLat([tps.longitude, tps.latitude])
-                    .setPopup(new mapboxgl.Popup().setHTML('<b>' + tps.nama + '</b>'))
-                    .addTo(map);
-
-                // Tampilkan modal
-                $('#tpsDetailModal').modal('show');
-            }
-
-            $('#tpsDetailModal').on('shown.bs.modal', function () {
-                // Memaksa Mapbox untuk menggambar ulang peta dan menyesuaikan ukuran canvas
-                map.resize();
-            });
-
-            // Fungsi untuk mendapatkan lokasi pengguna
-            function getUserLocation() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(showPosition, showError);
-                } else {
-                    console.error('Geolocation is not supported by this browser.');
-                }
-            }
-
-            // Fungsi yang dijalankan jika izin diberikan
-            function showPosition(position) {
-                // Koordinat pengguna
-                var userLat = position.coords.latitude;
-                var userLon = position.coords.longitude;
-
-                console.log('Latitude: ' + userLat + ', Longitude: ' + userLon);
-
-                // Loop melalui data TPS
-                for (let i = 0; i < data_tps.length; i++) {
-                    const tps = data_tps[i];
-
-                    // Konversi latitude dan longitude ke float
-                    var tpsLat = parseFloat(tps.latitude);
-                    var tpsLon = parseFloat(tps.longitude);
-
-                    var jarak = calculateDistance(userLat, userLon, tpsLat, tpsLon);
-                    var waktuTempuh = hitungWaktuTempuh(jarak);
-
-                    // Tampilkan jarak dan waktu tempuh di dalam card
-                    $('#jarak-' + (i + 1)).text(jarak.toFixed(2) + ' km');
-                    $('#waktu-' + (i + 1)).text(waktuTempuh);
-                }
-            }
-
-            // Fungsi yang dijalankan jika terjadi error
-            function showError(error) {
-                console.error('Error getting user location:', error);
-                // Tampilkan pesan error kepada pengguna atau gunakan data lokasi default
-            }
-
-            // Fungsi untuk menghitung jarak antara dua titik koordinat (dalam kilometer)
-            function calculateDistance(lat1, lon1, lat2, lon2) {
-                var R = 6371; // Radius bumi dalam kilometer
-                var dLat = deg2rad(lat2 - lat1);
-                var dLon = deg2rad(lon2 - lon1);
-                var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                var d = R * c; // Jarak dalam kilometer
-                return d;
-            }
-
-            function deg2rad(deg) {
-                return deg * (Math.PI / 180);
-            }
-
-            // Contoh fungsi untuk menghitung waktu tempuh (ganti dengan logika Anda)
-            function hitungWaktuTempuh(jarak) {
-                // Asumsi kecepatan rata-rata 40 km/jam
-                var waktuJam = jarak / 40;
-                var waktuMenit = Math.round(waktuJam * 60);
-                return waktuMenit + ' menit';
-            }
-
-            // Panggil fungsi untuk mendapatkan lokasi pengguna saat halaman dimuat
-            getUserLocation();
-        </script>
-        {% endif %}
     </body>
 </html>

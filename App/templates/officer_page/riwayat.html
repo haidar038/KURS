@@ -1,8 +1,8 @@
-{% extends 'base.html' %} {% block container %}
+{% extends 'officer_page/base.html' %} {% block container %}
 <div class="container pt-3">
     <div class="row">
         <div class="col">
-            <p class="fw-bold h3 text-center">Lapor Setoran Sampah</p>
+            <p class="fw-bold h3 text-center">Riwayat Setoran Sampah</p>
             <hr />
             {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
             <div class="alert d-flex justify-content-between alert-dismissable fade show mb-3 alert-{{ category }}" role="alert">
@@ -13,33 +13,21 @@
             <div class="table-responsive">
                 <table class="table">
                     <thead>
-                        <tr>
+                        <tr class="text-center">
                             <th scope="col">#</th>
                             <th scope="col">TPS Tujuan</th>
-                            <th scope="col">Tanggal</th>
-                            <th scope="col">Status</th>
                             <th scope="col">Volume (kg)</th>
-                            <th scope="col">Detail</th>
+                            <th scope="col">Lokasi</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if data_laporan %} {% for item in data_laporan %}
                         <tr class="align-middle">
-                            <th scope="row">{{ loop.index }}</th>
-                            <td>{{ item.nama_tps | default('Belum Ada') }}</td>
-                            <td>{{ item.tanggal_laporan }}</td>
-                            <td>
-                                {% if item.status == '1' %}
-                                <span class="badge text-bg-secondary">Menunggu</span>
-                                {% elif item.status == '2' %}
-                                <span class="badge text-bg-info">Proses</span>
-                                {% else %}
-                                <span class="badge text-bg-success">Selesai</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ item.berat }}</td>
-                            <td>
-                                <div class="d-flex justify-content-center align-items-center justify-content-lg-center">
+                            <th scope="row" class="text-center">{{ loop.index }}</th>
+                            <td>{% if item.tps %} {{ item.tps.nama }} {% else %} Belum Ada {% endif %}</td>
+                            <td class="text-center">{{ item.berat }}</td>
+                            <td class="">
+                                <div class="d-flex justify-content-center align-items-center">
                                     <a href="#" class="btn btn-light fs-3" onclick="showTPSDetails('{{ item.latitude }}', '{{ item.longitude }}', '{{ item.id }}')">
                                         <i class="fa fa-chevron-circle-right"></i>
                                     </a>
@@ -49,7 +37,7 @@
                         {% endfor %} {% else %}
                         <tr class="align-middle">
                             <td scope="row" colspan="7" class="text-center text-secondary">
-                                <em>-- Belum ada riwayat --</em>
+                                <em>-- Belum ada laporan yang sukses --</em>
                             </td>
                         </tr>
                         {% endif %}
@@ -65,7 +53,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="tpsDetailModalLabel">Info Lokasi</h5>
+                <h5 class="modal-title" id="tpsDetailModalLabel">Info Lokasi <span class="badge text-bg-success">Selesai</span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -77,7 +65,7 @@
             </div>
             <div class="modal-footer justify-content-between">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-                <a id="deleteReportLink" href="#" class="btn btn-danger"><i class="fa fa-trash"></i> Hapus</a>
+                <!-- <a id="deleteReportLink" href="#" class="btn btn-danger"><i class="fa fa-trash"></i> Hapus</a> -->
             </div>
         </div>
     </div>
@@ -95,8 +83,8 @@
         zoom: 10,
     });
 
-    function showTPSDetails(latitude, longitude, reportId) {
-        $('#tpsDetailModalLabel').text('Lokasi Anda');
+    function showTPSDetails(latitude, longitude) {
+        $('#tpsDetailModalLabel').text('Lokasi Sampah');
 
         // Hapus marker sebelumnya jika ada
         if (marker) {
@@ -113,10 +101,6 @@
             center: [longitude, latitude],
             zoom: 15,
         });
-
-        // Set delete link dengan ID laporan
-        const deleteLink = document.getElementById('deleteReportLink');
-        deleteLink.href = `{{ url_for('views.delete_report', id='') }}/${reportId}`;
 
         $('#tpsDetailModal').modal('show');
     }

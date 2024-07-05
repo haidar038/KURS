@@ -4,12 +4,11 @@
         <div class="col">
             <p class="fw-bold h3 text-center">Artikel</p>
             <hr />
-            {% for articles in artikel %}
-            <div class="card card-body rounded-4 shadow">
+            {% for articles in artikel_paginate.items %}
+            <div class="card card-body rounded-4 shadow mb-3">
                 <p class="fw-bold h5 mb-0">{{ articles.judul }}</p>
                 <hr />
                 <img class="mb-3 img-fluid w-100" src="{{ articles.thumbnail }}" alt="Profile Picture" style="width: 120px" />
-
                 <div class="col text-truncate mb-3">
                     <div class="truncate-multi-line">{{ articles.konten | safe }}</div>
                 </div>
@@ -24,7 +23,6 @@
                             </div>
                             <div class="modal-body">
                                 <img class="mb-3 img-fluid w-100" src="{{ articles.thumbnail }}" alt="Profile Picture" style="width: 120px" />
-
                                 <p class="mb-0">{{ articles.konten | safe }}</p>
                             </div>
                             <div class="modal-footer">
@@ -37,5 +35,33 @@
             {% endfor %}
         </div>
     </div>
+    <!-- Pagination -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if artikel_paginate.has_prev %}
+            <li class="page-item">
+                <a class="page-link text-success" href="{{ url_for('views.wiki', page=artikel_paginate.prev_num) }}">Sebelumnya</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link text-success" href="#">Sebelumnya</a>
+            </li>
+            {% endif %} {% for page_num in artikel_paginate.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %} {% if page_num %} {% if page_num == artikel_paginate.page %}
+            <li class="page-item active"><a class="page-link bg-success border-success">{{ page_num }}</a></li>
+            {% else %}
+            <li class="page-item"><a class="page-link text-success" href="{{ url_for('views.wiki', page=page_num) }}">{{ page_num }}</a></li>
+            {% endif %} {% else %}
+            <li class="page-item disabled"><a class="page-link text-success" href="#">…</a></li>
+            {% endif %} {% endfor %} {% if artikel_paginate.has_next %}
+            <li class="page-item">
+                <a class="page-link text-success" href="{{ url_for('views.wiki', page=artikel_paginate.next_num) }}">Selanjutnya</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link text-success" href="#">Selanjutnya</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
 </div>
 {% endblock %}

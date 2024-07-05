@@ -1,0 +1,213 @@
+{% extends 'officer_page/base.html' %} {% block container %}
+<div class="container pt-3">
+    <div class="row">
+        <div class="col">
+            <p class="fw-bold h3 d-flex align-items-center justify-content-center gap-2">List Laporan Setoran Sampah <ion-icon class="text-success" name="trash"></ion-icon></p>
+            <hr />
+            {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+            <div class="alert d-flex justify-content-between alert-dismissable fade show mb-3 alert-{{ category }}" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %} {% endif %} {% endwith %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">TPS Tujuan</th>
+                            <th scope="col">Tanggal</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Volume (kg)</th>
+                            <th scope="col">Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if data_laporan.items %} {% for item in data_laporan %}
+                        <tr class="align-middle">
+                            <th scope="row">{{ loop.index + ((page - 1) * per_page) }}</th>
+                            <td>{% if item.tps %} {{ item.tps.nama }} - {{ item.tps.alamat }} {% else %} Belum Ada {% endif %}</td>
+                            <td>{{ item.tanggal_laporan }}</td>
+                            <td>
+                                {% if item.status == '1' %}
+                                <span class="badge text-bg-secondary">Menunggu</span>
+                                {% elif item.status == '2' %}
+                                <span class="badge text-bg-info">Proses</span>
+                                {% else %}
+                                <span class="badge text-bg-success">Selesai</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.berat }}</td>
+                            <td>
+                                <div class="d-flex justify-content-center align-items-center justify-content-lg-center">
+                                    <a href="#" class="btn btn-light fs-3" onclick="processReport('{{ item.latitude }}', '{{ item.longitude }}', '{{ item.id }}', '{{ item.status }}')">
+                                        <i class="fa fa-chevron-circle-right"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %} {% else %}
+                        <tr class="align-middle">
+                            <td scope="row" colspan="6" class="text-center text-secondary">
+                                <em>-- Belum ada laporan --</em>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination -->
+            <div class="d-flex justify-content-center">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination">
+                        {% if data_laporan.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link text-success" href="{{ url_for('officer.reports_list', page=data_laporan.prev_num) }}" aria-label="Previous">
+                                <span aria-hidden="true">«</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link text-success" href="#" aria-label="Previous">
+                                <span aria-hidden="true">«</span>
+                            </a>
+                        </li>
+                        {% endif %} {% for page_num in data_laporan.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %} {% if page_num %} {% if page_num == page %}
+                        <li class="page-item active" aria-current="page">
+                            <span class="page-link bg-success border-success">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link text-success" href="{{ url_for('officer.reports_list', page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                        {% endif %} {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link text-success" href="#">…</a>
+                        </li>
+                        {% endif %} {% endfor %} {% if data_laporan.has_next %}
+                        <li class="page-item">
+                            <a class="page-link text-success" href="{{ url_for('officer.reports_list', page=data_laporan.next_num) }}" aria-label="Next">
+                                <span aria-hidden="true">»</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link text-success" href="#" aria-label="Next">
+                                <span aria-hidden="true">»</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal untuk menampilkan peta -->
+<div class="modal fade" id="tpsDetailModal" tabindex="-1" aria-labelledby="tpsDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tpsDetailModalLabel">Info Lokasi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="map-wrapper-outer" class="d-flex justify-content-center align-items-center mb-3">
+                    <div id="map-wrapper-inner">
+                        <div id="tps-detail-map"></div>
+                    </div>
+                </div>
+                <form id="tpsForm" method="POST">
+                    <label for="pilihTPS">Pilih TPS Tujuan</label>
+                    <select id="pilihTPS" name="pilihTPS" class="form-select mb-3" aria-label="Pilih TPS Tujuan" required>
+                        {% for tps in data_tps %}
+                        <option value="{{ tps.id }}">{{ tps.nama }} - {{ tps.alamat }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <input type="hidden" id="reportId" name="reportId" value="" />
+                    <button type="submit" id="processReport" class="btn btn-warning d-flex align-items-center gap-2 w-100">
+                        <i class="fa fa-hourglass-half" id="buttonIcon"></i>
+                        <span id="buttonText">Proses</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %} {% block scripts %}
+<script>
+    let map;
+    let marker;
+
+    mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q';
+    map = new mapboxgl.Map({
+        container: 'tps-detail-map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [107.6096, -6.9175],
+        zoom: 10,
+    });
+
+    function processReport(latitude, longitude, reportId, status) {
+        $('#tpsDetailModalLabel').text('Lokasi Sampah');
+
+        // Hapus marker sebelumnya jika ada
+        if (marker) {
+            marker.remove();
+        }
+
+        // Buat popup
+        const popup = new mapboxgl.Popup({
+            offset: 30,
+        })
+            .setLngLat([longitude, latitude])
+            .setHTML('<h5>Lokasi Sampah Pelapor</h5>')
+            .addTo(map);
+
+        // Tambahkan marker dengan popup
+        marker = new mapboxgl.Marker().setLngLat([longitude, latitude]).setPopup(popup).addTo(map);
+
+        map.flyTo({
+            center: [longitude, latitude],
+            zoom: 15,
+        });
+
+        // Set href dan teks button berdasarkan status
+        const processButton = document.getElementById('processReport');
+        const buttonText = document.getElementById('buttonText');
+        const buttonIcon = document.getElementById('buttonIcon');
+        const tpsForm = document.getElementById('tpsForm');
+        const reportIdInput = document.getElementById('reportId');
+
+        reportIdInput.value = reportId;
+
+        if (status === '1') {
+            tpsForm.action = `{{ url_for('officer.confirm_report', id='') }}${reportId}`;
+            processButton.classList.remove('btn-success', 'disabled');
+            processButton.classList.add('btn-warning');
+            buttonIcon.classList.replace('fa-circle-check', 'fa-hourglass-half');
+            buttonText.textContent = 'Proses';
+        } else if (status === '2') {
+            tpsForm.action = `{{ url_for('officer.finish_report', id='') }}${reportId}`;
+            processButton.classList.remove('btn-warning', 'disabled');
+            processButton.classList.add('btn-success');
+            buttonIcon.classList.replace('fa-hourglass-half', 'fa-circle-check');
+            buttonText.textContent = 'Selesai';
+        } else {
+            // status === '3' atau status lain yang tidak terdefinisi
+            tpsForm.action = '#'; // Atau bisa dihilangkan dengan: processButton.removeAttribute('href');
+            processButton.classList.remove('btn-warning');
+            processButton.classList.add('btn-success', 'disabled');
+            buttonText.textContent = 'Selesai';
+        }
+
+        $('#tpsDetailModal').modal('show');
+    }
+
+    $('#tpsDetailModal').on('shown.bs.modal', function () {
+        map.resize();
+    });
+</script>
+{% endblock %}
