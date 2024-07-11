@@ -16,7 +16,6 @@
                         <tr>
                             <th scope="col">#</th>
                             <th scope="col">TPS Tujuan</th>
-                            <th scope="col">Tanggal</th>
                             <th scope="col">Status</th>
                             <th scope="col">Volume (kg)</th>
                             <th scope="col">Detail</th>
@@ -27,7 +26,6 @@
                         <tr class="align-middle">
                             <th scope="row">{{ loop.index + ((page - 1) * per_page) }}</th>
                             <td>{% if item.tps %} {{ item.tps.nama }} - {{ item.tps.alamat }} {% else %} Belum Ada {% endif %}</td>
-                            <td>{{ item.tanggal_laporan }}</td>
                             <td>
                                 {% if item.status == '1' %}
                                 <span class="badge text-bg-secondary">Menunggu</span>
@@ -117,6 +115,13 @@
                     <div id="map-wrapper-inner">
                         <div id="tps-detail-map"></div>
                     </div>
+                </div>
+                <div class="mb-3">
+                    {% if foto_laporan %} {% for item in foto_laporan %}
+                    <img src="{{ url_for('officer.report_picture', id=item.id) }}" alt="Profile Picture" class="profile-picture rounded-circle object-fit-cover" height="132" width="132" />
+                    {% endfor %} {% else %}
+                    <img src="{{ url_for('static', filename='img/profile/default.png') }}" alt="Profile Picture" class="profile-picture" height="132" width="132" />
+                    {% endif %}
                 </div>
                 <form id="tpsForm" method="POST">
                     <label for="pilihTPS">Pilih TPS Tujuan</label>

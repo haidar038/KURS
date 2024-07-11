@@ -1,0 +1,218 @@
+{% extends 'admin_page/base.html' %} {% block head %}
+<!-- HEAD STYLING -->
+{% endblock %} {% block container %}
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h1 class="fw-bold mb-3 text-center">Data TPS</h1>
+            <div class="card card-body rounded-4 shadow">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr class="align-middle">
+                                <th scope="col">#</th>
+                                <th scope="col">Alamat</th>
+                                <th scope="col">Lat</th>
+                                <th scope="col">Lang</th>
+                                <th scope="col">Jenis Sampah</th>
+                                <th scope="col">Jam Operasional</th>
+                                <th scope="col">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tps_list in data_tps %}
+                            <tr class="align-middle">
+                                <th scope="row">{{ loop.index }}</th>
+                                <td>{{ tps_list.alamat }}</td>
+                                <td>{{ tps_list.latitude }}</td>
+                                <td>{{ tps_list.longitude }}</td>
+                                <td class="text-capitalize">{{ tps_list.jenis_sampah }}</td>
+                                <td>{{ tps_list.jam_operasional_start }} - {{ tps_list.jam_operasional_end }} WIT</td>
+                                <td>
+                                    <a href="{{ url_for('app_admin.delete_tps', id=tps_list.id ) }}" role="button" class="btn btn-danger align-items-center justify-content-center d-flex flex-column"><ion-icon name="trash"></ion-icon></a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-center">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination">
+                            {% if tps_pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('app_admin.tps', page=tps_pagination.prev_num) }}" aria-label="Previous">
+                                    <span aria-hidden="true">«</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#" aria-label="Previous">
+                                    <span aria-hidden="true">«</span>
+                                </a>
+                            </li>
+                            {% endif %} {% if tps_pagination.page <= 3 %} {% for page_num in range(1, min(tps_pagination.pages, 4) + 1) %} {% if page_num == tps_pagination.page %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link bg-success border-success">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('app_admin.tps', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %} {% endfor %} {% if tps_pagination.pages > 3 %}
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#">…</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('app_admin.tps', page=tps_pagination.pages) }}">{{ tps_pagination.pages }}</a>
+                            </li>
+                            {% endif %} {% elif tps_pagination.page >= tps_pagination.pages - 2 %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('app_admin.tps', page=1) }}">1</a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#">…</a>
+                            </li>
+                            {% for page_num in range(max(1, tps_pagination.pages - 3), tps_pagination.pages + 1) %} {% if page_num == tps_pagination.page %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link bg-success border-success">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('app_admin.tps', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %} {% endfor %} {% else %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('app_admin.tps', page=1) }}">1</a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#">…</a>
+                            </li>
+                            {% for page_num in range(tps_pagination.page - 1, tps_pagination.page + 2) %} {% if page_num == tps_pagination.page %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link bg-success border-success">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('app_admin.tps', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %} {% endfor %}
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#">…</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('app_admin.tps', page=tps_pagination.pages) }}">{{ tps_pagination.pages }}</a>
+                            </li>
+                            {% endif %} {% if tps_pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('app_admin.tps', page=tps_pagination.next_num) }}" aria-label="Next">
+                                    <span aria-hidden="true">»</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#" aria-label="Next">
+                                    <span aria-hidden="true">»</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                <!-- Button trigger modal -->
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addTps">Tambah Data</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="addTps" tabindex="-1" aria-labelledby="addTpsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="addTpsLabel">Tambah Data TPS</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="" method="post">
+                <div class="modal-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+                    <div class="alert d-flex alert-dismissable fade show mb-3 alert-{{ category }}" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %} {% endif %} {% endwith %}
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="nama_tps" name="nama_tps" placeholder="Nama TPS" required />
+                        <label for="nama_tps">Nama TPS</label>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="alamat" name="alamat" placeholder="Alamat" required />
+                        <label for="alamat">Alamat</label>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="latitude" name="latitude" placeholder="Latitude" required />
+                                <label for="latitude">Latitude</label>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="longitude" name="longitude" placeholder="Longitude" required />
+                                <label for="longitude">Longitude</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-floating mb-3">
+                        <select class="form-select mb-3" id="jenis_sampah" aria-label="Jenis Sampah" name="jenis_sampah" required>
+                            <!-- <option selected>Jenis Sampah</option> -->
+                            <option value="organik" selected>Organik</option>
+                            <option value="anorganik">Anorganik</option>
+                            <option value="campuran">Campuran</option>
+                        </select>
+                        <label for="jenis_sampah">Jenis Sampah</label>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col">
+                            <div class="mb-3 form-floating">
+                                <input type="time" class="form-control" id="jam_operasional_start" name="jam_operasional_start" placeholder="Jam Operasional" required />
+                                <label for="jam_operasional_start" class="form-label">Jam Buka</label>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="mb-3 form-floating">
+                                <input type="time" class="form-control" id="jam_operasional_end" name="jam_operasional_end" placeholder="Jam Operasional" required />
+                                <label for="jam_operasional_end" class="form-label">Jam Tutup</label>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <button type="submit" class="btn btn-success w-100">Simpan</button> -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-success d-flex gap-2 align-items-center">Tambah <i class="fa fa-plus-circle"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<!-- SCRIPTS -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var elements = document.getElementsByTagName('INPUT');
+        for (var i = 0; i < elements.length; i++) {
+            elements[i].oninvalid = function (e) {
+                e.target.setCustomValidity('');
+                if (!e.target.validity.valid) {
+                    e.target.setCustomValidity('Form ini tidak boleh kosong');
+                }
+            };
+            elements[i].oninput = function (e) {
+                e.target.setCustomValidity('');
+            };
+        }
+    });
+</script>
+{% endblock %}

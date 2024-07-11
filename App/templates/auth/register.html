@@ -12,12 +12,12 @@
                     <label for="password" class="form-label">Kata Sandi</label>
                     <div class="input-group mb-3">
                         <input type="password" class="form-control" id="password" name="password" placeholder="Masukkan Kata Sandi" />
-                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button"><i class="fa-solid fa-eye" id="togglePassword" style="cursor: pointer"></i></button>
+                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button" id="togglePassword"><i class="fa-solid fa-eye" style="cursor: pointer"></i></button>
                     </div>
                     <label for="confirm_password" class="form-label">Konfirmasi Kata Sandi</label>
                     <div class="input-group mb-3">
                         <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Ulangi Kata Sandi" />
-                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button"><i class="fa-solid fa-eye" id="toggleConfirmPassword" style="cursor: pointer"></i></button>
+                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button" id="toggleConfirmPassword"><i class="fa-solid fa-eye" style="cursor: pointer"></i></button>
                     </div>
                     <!-- FLASH MESSAGE -->
                     {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}

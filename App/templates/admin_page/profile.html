@@ -1,0 +1,439 @@
+{% extends 'admin_page/base.html' %}
+<!-- BLOCKS -->
+{% block container %}
+<div class="container pt-3">
+    <div class="row">
+        <div class="col">
+            <!-- <p class="fw-bold h3 text-center mb-3">Profil Anda</p> -->
+            <div class="d-flex justify-content-center mb-3">
+                <button class="btn border-2 border-success rounded-circle p-0 ratio-1x1 btn-outline-success" data-bs-toggle="modal" data-bs-target="#updatePictureModal">
+                    {% if user.foto_profil %}
+                    <img src="{{ url_for('app_admin.profile_picture', id=current_user.id) }}" alt="Profile Picture" class="profile-picture rounded-circle object-fit-cover" height="132" width="132" />
+                    {% else %}
+                    <img src="{{ url_for('static', filename='img/profile/default.png') }}" alt="Profile Picture" class="profile-picture" height="132" width="132" />
+                    {% endif %}
+                </button>
+            </div>
+            <p class="h3 text-center mb-0">{{ current_user.username }}</p>
+            <p class="text-secondary text-center mb-3">{{ current_user.email }}</p>
+            {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+            <div class="alert d-flex justify-content-between alert-dismissable fade show mb-3 alert-{{ category }}" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %} {% endif %} {% endwith %}
+            <hr class="mb-3" />
+            <div class="d-flex flex-column gap-2 mb-3">
+                <button type="button" class="btn btn-light px-2 py-2 rounded-3 d-flex justify-content-start align-items-center" data-bs-toggle="modal" data-bs-target="#updateProfileModal">
+                    <ion-icon name="create" class="me-2 fs-3 bg-body-secondary p-2 rounded-3"></ion-icon> Ubah Profil <ion-icon name="chevron-forward" class="fs-2 ms-auto"></ion-icon>
+                </button>
+                <button type="button" class="btn btn-light px-2 py-2 rounded-3 d-flex justify-content-start align-items-center" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                    <ion-icon name="settings" class="me-2 fs-3 bg-body-secondary p-2 rounded-3"></ion-icon> Pengaturan Akun <ion-icon name="chevron-forward" class="fs-2 ms-auto"></ion-icon>
+                </button>
+            </div>
+            <hr class="mb-3" />
+            <div class="d-flex flex-column gap-2 mb-3">
+                <button type="button" class="btn btn-light px-2 py-2 rounded-3 d-flex justify-content-start align-items-center" data-bs-toggle="modal" data-bs-target="#legalInformationModal">
+                    <ion-icon name="information" class="me-2 fs-3 bg-body-secondary p-2 rounded-3"></ion-icon> Informasi Umum <ion-icon name="chevron-forward" class="fs-2 ms-auto"></ion-icon>
+                </button>
+                <button type="button" class="btn btn-light px-2 py-2 rounded-3 d-flex justify-content-start align-items-center" data-bs-toggle="modal" data-bs-target="#faqModal">
+                    <ion-icon name="help" class="me-2 fs-3 bg-body-secondary p-2 rounded-3"></ion-icon> FAQs <ion-icon name="chevron-forward" class="fs-2 ms-auto"></ion-icon>
+                </button>
+            </div>
+            <hr class="mb-3" />
+            <div class="d-flex flex-column gap-2">
+                <a href="{{ url_for('auth.logout' ) }}" role="button" class="btn btn-light px-2 py-2 rounded-3 d-flex justify-content-start align-items-center">
+                    <ion-icon name="power" class="me-2 fs-3 bg-body-secondary p-2 rounded-3"></ion-icon> Keluar <ion-icon name="chevron-forward" class="fs-2 ms-auto"></ion-icon>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- todo   =========================================== SETTING MODALS ======================================= -->
+
+<div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="settingsModalLabel">Pengaturan Akun</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex flex-column gap-2 mb-3">
+                    <button type="button" class="btn btn-light px-2 py-2 rounded-3 d-flex justify-content-start align-items-center" data-bs-toggle="modal" data-bs-target="#updateEmailModal">
+                        <ion-icon name="mail" class="me-2 fs-3 bg-body-secondary p-2 rounded-3"></ion-icon> Ubah Alamat Email <ion-icon name="chevron-forward" class="fs-2 ms-auto"></ion-icon>
+                    </button>
+                    <button type="button" class="btn btn-light px-2 py-2 rounded-3 d-flex justify-content-start align-items-center" data-bs-toggle="modal" data-bs-target="#updatePasswordModal">
+                        <ion-icon name="key" class="me-2 fs-3 bg-body-secondary p-2 rounded-3"></ion-icon> Ubah Kata Sandi <ion-icon name="chevron-forward" class="fs-2 ms-auto"></ion-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="faqModal" tabindex="-1" aria-labelledby="faqModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="faqModalLabel">Pertanyaan yang Sering Diajukan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="accordion" id="faqAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">Apa itu KURS?</button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                <strong>KURS (Kurir Sampah)</strong> adalah platform digital untuk mengelola dan menangani sampah rumah tangga agar lebih tepat dan efisien, menciptakan lingkungan yang bersih dan sehat.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">Bagaimana cara kerja KURS?</button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Pengguna melaporkan lokasi sampah yang akan diangkut oleh petugas. Petugas kemudian akan mengambil sampah sesuai laporan pengguna.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                Siapa saja yang dapat menggunakan KURS?
+                            </button>
+                        </h2>
+                        <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Aplikasi ini dapat digunakan oleh masyarakat umum sebagai pengguna biasa dan oleh petugas yang bertugas mengangkut sampah.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                Apa saja fitur yang tersedia untuk pengguna biasa?
+                            </button>
+                        </h2>
+                        <div id="collapseFour" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Fitur untuk pengguna biasa meliputi autentikasi, laporan sampah, status laporan, riwayat laporan, notifikasi, profil pengguna, dan wiki (edukasi dan tips tentang sampah).</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                                Apa saja fitur yang tersedia untuk petugas?
+                            </button>
+                        </h2>
+                        <div id="collapseFive" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Fitur untuk petugas meliputi autentikasi, daftar laporan dalam bentuk tabel, status laporan, dan riwayat penjemputan.</div>
+                        </div>
+                    </div>
+                    <!-- todo -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix" aria-expanded="false" aria-controls="collapseSix">Bagimana cara melaporkan sampah?</button>
+                        </h2>
+                        <div id="collapseSix" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Pengguna dapat melaporkan sampah dengan memasukkan jenis sampah, estimasi volume, alamat penjemputan, foto sampah, dan jadwal penjemputan melalui aplikasi.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeven" aria-expanded="false" aria-controls="collapseSeven">
+                                Apa itu misi harian dalam aplikasi KURS?
+                            </button>
+                        </h2>
+                        <div id="collapseSeven" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Misi harian adalah tugas yang dapat dilakukan pengguna untuk mendapatkan poin, seperti memilah sampah, membuat kerajinan dari sampah, menyetor sampah ke bank sampah, dan membuat kompos.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEight" aria-expanded="false" aria-controls="collapseEight">
+                                Apa keuntungan dari mengumpulkan poin?
+                            </button>
+                        </h2>
+                        <div id="collapseEight" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Poin yang dikumpulkan dapat ditukar dengan reward menarik seperti pulsa, token listrik, voucher belanja, produk ramah lingkungan, dan donasi.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNine" aria-expanded="false" aria-controls="collapseNine">Bagaimana cara mendapatkan poin?</button>
+                        </h2>
+                        <div id="collapseNine" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Pengguna dapat mendapatkan poin dengan menyelesaikan misi harian seperti memilah sampah, membuat kerajinan dari sampah, menyetor sampah, dan membuat kompos.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTen" aria-expanded="false" aria-controls="collapseTen">Apa saja reward yang bisa didapatkan?</button>
+                        </h2>
+                        <div id="collapseTen" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Reward yang bisa didapatkan meliputi pulsa telepon, token listrik, voucher belanja, produk ramah lingkungan, dan donasi.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEleven" aria-expanded="false" aria-controls="collapseEleven">
+                                Bagaimana cara menukar poin dengan reward?
+                            </button>
+                        </h2>
+                        <div id="collapseEleven" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Pengguna dapat menukar poin dengan reward melalui fitur yang tersedia di aplikasi KURS.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwelve" aria-expanded="false" aria-controls="collapseTwelve">
+                                Bagaimana cara menghubungi dukungan pengguna di KURS?
+                            </button>
+                        </h2>
+                        <div id="collapseTwelve" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">Pengguna dapat menghubungi dukungan pelanggan melalui fitur kontak yang tersedia di aplikasi.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="legalInformationModal" tabindex="-1" aria-labelledby="legalInformationModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="legalInformationModalLabel">Informasi Umum</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="nav nav-tabs justify-content-center" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tou-tab" data-bs-toggle="tab" data-bs-target="#tou-tab-pane" type="button" role="tab" aria-controls="tou-tab-pane" aria-selected="true">Syarat & Ketentuan</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="privacy-policy-tab" data-bs-toggle="tab" data-bs-target="#privacy-policy-tab-pane" type="button" role="tab" aria-controls="privacy-policy-tab-pane" aria-selected="false">
+                            Kebijakan Pribadi
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="myTabContent">
+                    <div class="tab-pane fade show active py-3" id="tou-tab-pane" role="tabpanel" aria-labelledby="tou-tab" tabindex="0">{% include 'admin_page/tou.html' %}</div>
+                    <div class="tab-pane fade py-3" id="privacy-policy-tab-pane" role="tabpanel" aria-labelledby="privacy-policy-tab" tabindex="0">{% include 'admin_page/privacy-policy.html' %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- todo   =========================================== UPDATE MODALS ======================================= -->
+
+<div class="modal fade" id="updatePictureModal" tabindex="-1" aria-labelledby="updatePictureModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updatePictureModalLabel">Ubah Foto Profil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('app_admin.update_profile_picture', id=current_user.id ) }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="foto_profil" class="form-label">Pilih Foto Profil</label>
+                        <input class="form-control" type="file" id="foto_profil" name="foto_profil" />
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-success btn-block">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="updateProfileModal" tabindex="-1" aria-labelledby="updateProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateProfileModalLabel">Ubah Informasi Pribadi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('app_admin.update_profile', id=current_user.id ) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" value="{{ current_user.username }}" placeholder="Masukkan Username" />
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-success btn-block">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="updateEmailModal" tabindex="-1" aria-labelledby="updateEmailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateEmailModalLabel">Ubah Alamat Email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="updateEmailForm" action="{{ url_for('app_admin.update_email', id=current_user.id ) }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" placeholder="Masukkan Alamat Email" />
+                        <div id="email-error" class="invalid-feedback"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Konfirmasi Kata Sandi</label>
+                        <input type="password" class="form-control" id="password" name="password" placeholder="Konfirmasi Kata Sandi" />
+                        <div id="password-error" class="invalid-feedback"></div>
+                    </div>
+                    <div id="update-success" class="alert alert-success" style="display: none"></div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-success" id="simpanPerubahan">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="updatePasswordModal" tabindex="-1" aria-labelledby="updatePasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updatePasswordModalLabel">Ubah Kata Sandi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{{ url_for('app_admin.update_password', id=current_user.id ) }}">
+                <div class="modal-body">
+                    <label for="old_password" class="form-label">Kata Sandi Lama</label>
+                    <div class="mb-3 input-group">
+                        <!-- <input type="password" class="form-control" id="old_password" name="old_password" placeholder="Masukkan Kata Sandi Lama Anda" /> -->
+                        <input type="password" class="form-control" id="old_password" name="old_password" placeholder="Masukkan Kata Sandi" />
+                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button" id="toggleOldPassword"><i class="fa-solid fa-eye" style="cursor: pointer"></i></button>
+                    </div>
+                    <label for="new_password" class="form-label">Kata Sandi Baru</label>
+                    <div class="mb-3 input-group">
+                        <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Masukkan Kata Sandi Baru Anda" />
+                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button" id="toggleNewPassword"><i class="fa-solid fa-eye" style="cursor: pointer"></i></button>
+                    </div>
+                    <label for="confirm_password" class="form-label">Konfirmasi Kata Sandi Baru</label>
+                    <div class="mb-3 input-group">
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Konfirmasi Kata Sandi Baru" />
+                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button" id="toggleConfirmPassword"><i class="fa-solid fa-eye" style="cursor: pointer"></i></button>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-success btn-block">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+    const toggleOldPassword = document.querySelector('#toggleOldPassword');
+    const password = document.querySelector('#old_password');
+
+    toggleOldPassword.addEventListener('click', function (e) {
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+
+        // Toggle both classes
+        this.querySelector('i').classList.toggle('fa-eye');
+        this.querySelector('i').classList.toggle('fa-eye-slash');
+    });
+
+    const toggleNewPassword = document.querySelector('#toggleNewPassword');
+    const newPassword = document.querySelector('#new_password');
+
+    toggleNewPassword.addEventListener('click', function (e) {
+        const type = newPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+        newPassword.setAttribute('type', type);
+
+        // Toggle both classes
+        this.querySelector('i').classList.toggle('fa-eye');
+        this.querySelector('i').classList.toggle('fa-eye-slash');
+    });
+
+    const toggleConfirmPassword = document.querySelector('#toggleConfirmPassword');
+    const confirmPassword = document.querySelector('#confirm_password');
+
+    toggleConfirmPassword.addEventListener('click', function (e) {
+        const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+        confirmPassword.setAttribute('type', type);
+
+        // Toggle both classes
+        this.querySelector('i').classList.toggle('fa-eye');
+        this.querySelector('i').classList.toggle('fa-eye-slash');
+    });
+</script>
+<script>
+    $(document).ready(function () {
+        $('#updateEmailForm').on('submit', function (event) {
+            event.preventDefault(); // Mencegah submit form biasa
+
+            var newEmail = $('#email').val();
+            var password = $('#password').val();
+
+            // Reset pesan error
+            $('#email-error').text('');
+            $('#password-error').text('');
+            $('#email').removeClass('is-invalid');
+            $('#password').removeClass('is-invalid');
+
+            // Validasi Password
+            if (password === '') {
+                $('#password-error').text('Silakan masukkan kata sandi Anda.');
+                $('#password').addClass('is-invalid');
+                return; // Hentikan proses jika password kosong
+            }
+
+            $.ajax({
+                url: $(this).attr('action'), // Mengambil URL dari atribut action form
+                type: 'POST',
+                data: {
+                    email: newEmail,
+                    password: password,
+                },
+                success: function (response) {
+                    if (response.success) {
+                        // Update email berhasil!
+                        $('#update-success').text(response.message).show();
+                        setTimeout(function () {
+                            $('#updateEmailModal').modal('hide');
+                            // location.reload(); // Refresh halaman atau update tampilan profil
+                        }, 2000); // Tutup modal setelah 2 detik
+                    } else {
+                        // Ada error validasi
+                        if (response.email_error) {
+                            $('#email-error').text(response.email_error);
+                            $('#email').addClass('is-invalid');
+                        }
+                        if (response.password_error) {
+                            $('#password-error').text(response.password_error);
+                            $('#password').addClass('is-invalid');
+                        }
+                    }
+                },
+                error: function () {
+                    // Handle error jika AJAX gagal
+                    alert('Terjadi kesalahan saat memproses permintaan Anda.');
+                },
+            });
+        });
+    });
+</script>
+{% endblock %}

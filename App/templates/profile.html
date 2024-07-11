@@ -15,7 +15,7 @@
                 </button>
             </div>
             <p class="h3 text-center mb-0">{{ user.nama_lengkap }}</p>
-            <p class="text-secondary text-center mb-3">{{ user.username }}</p>
+            <p class="text-secondary text-center mb-3">{{ user_type.username }}</p>
             {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
             <div class="alert d-flex justify-content-between alert-dismissable fade show mb-3 alert-{{ category }}" role="alert">
                 {{ message }}
@@ -624,7 +624,7 @@
                 <h5 class="modal-title" id="updatePictureModalLabel">Ubah Foto Profil</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" action="/update_profile_picture/{{ user.user_id }}" enctype="multipart/form-data">
+            <form method="post" action="{{ url_for('views.update_profile_picture', id=current_user.id ) }}" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="foto_profil" class="form-label">Pilih Foto Profil</label>
@@ -647,7 +647,7 @@
                 <h5 class="modal-title" id="updateProfileModalLabel">Ubah Informasi Pribadi</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" action="/profil/{{ user.user_id }}/update_profil">
+            <form method="post" action="{{ url_for('views.update_profile', id=current_user.id ) }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="nama_lengkap" class="form-label">Nama Lengkap</label>
@@ -655,13 +655,11 @@
                     </div>
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" placeholder="Masukkan Username" />
+                        <input type="text" class="form-control" id="username" name="username" value="{{ user_type.username }}" placeholder="Masukkan Username" />
                     </div>
                     <div class="mb-3">
                         <label for="alamat" class="form-label">Alamat</label>
-                        <textarea class="form-control" name="alamat" id="alamat" rows="3">
-                            {{ user.alamat }}
-                        </textarea>
+                        <textarea class="form-control" name="alamat" id="alamat">{{ user.alamat }}</textarea>
                     </div>
                     <div class="mb-3">
                         <label for="no_telepon" class="form-label">No. HP</label>
@@ -684,23 +682,25 @@
                 <h5 class="modal-title" id="updateEmailModalLabel">Ubah Alamat Email</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" placeholder="Masukkan Alamat Email" />
-                    <div id="email-error" class="invalid-feedback"></div>
+            <form action="{{ url_for('views.update_email', id=current_user.id ) }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ user_type.email }}" placeholder="Masukkan Alamat Email" />
+                        <div id="email-error" class="invalid-feedback"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Konfirmasi Kata Sandi</label>
+                        <input type="password" class="form-control" id="password" name="password" placeholder="Konfirmasi Kata Sandi" />
+                        <div id="password-error" class="invalid-feedback"></div>
+                    </div>
+                    <div id="update-success" class="alert alert-success" style="display: none"></div>
                 </div>
-                <div class="mb-3">
-                    <label for="password" class="form-label">Konfirmasi Kata Sandi</label>
-                    <input type="password" class="form-control" id="password" name="password" placeholder="Konfirmasi Kata Sandi" />
-                    <div id="password-error" class="invalid-feedback"></div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-success" id="simpanPerubahan">Simpan</button>
                 </div>
-                <div id="update-success" class="alert alert-success" style="display: none"></div>
-            </div>
-            <div class="modal-footer justify-content-between">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                <button type="button" class="btn btn-success" id="simpanPerubahan">Simpan</button>
-            </div>
+            </form>
         </div>
     </div>
 </div>
@@ -712,19 +712,23 @@
                 <h5 class="modal-title" id="updatePasswordModalLabel">Ubah Kata Sandi</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="post" action="/profil/{{ user.user_id }}/settings/update_password">
+            <form method="post" action="{{ url_for('views.update_password', id=current_user.id ) }}">
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="old_pass" class="form-label">Kata Sandi Lama</label>
-                        <input type="password" class="form-control" id="old_pass" name="old_pass" placeholder="Masukkan Kata Sandi Lama Anda" />
+                    <label for="old_password" class="form-label">Kata Sandi Lama</label>
+                    <div class="mb-3 input-group">
+                        <!-- <input type="password" class="form-control" id="old_password" name="old_password" placeholder="Masukkan Kata Sandi Lama Anda" /> -->
+                        <input type="password" class="form-control" id="old_password" name="old_password" placeholder="Masukkan Kata Sandi" />
+                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button" id="toggleOldPassword"><i class="fa-solid fa-eye" style="cursor: pointer"></i></button>
                     </div>
-                    <div class="mb-3">
-                        <label for="new_pass" class="form-label">Kata Sandi Baru</label>
-                        <input type="password" class="form-control" id="new_pass" name="new_pass" placeholder="Masukkan Kata Sandi Baru Anda" />
+                    <label for="new_password" class="form-label">Kata Sandi Baru</label>
+                    <div class="mb-3 input-group">
+                        <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Masukkan Kata Sandi Baru Anda" />
+                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button" id="toggleNewPassword"><i class="fa-solid fa-eye" style="cursor: pointer"></i></button>
                     </div>
-                    <div class="mb-3">
-                        <label for="confirm_new_pass" class="form-label">Konfirmasi Kata Sandi Baru</label>
-                        <input type="password" class="form-control" id="confirm_new_pass" name="confirm_new_pass" placeholder="Konfirmasi Kata Sandi Baru" />
+                    <label for="confirm_password" class="form-label">Konfirmasi Kata Sandi Baru</label>
+                    <div class="mb-3 input-group">
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Konfirmasi Kata Sandi Baru" />
+                        <button class="btn btn-outline-success d-flex justify-content-center align-items-center" type="button" id="toggleConfirmPassword"><i class="fa-solid fa-eye" style="cursor: pointer"></i></button>
                     </div>
                 </div>
                 <div class="modal-footer justify-content-between">
@@ -853,6 +857,44 @@
                 },
             });
         });
+    });
+</script>
+
+<script>
+    const toggleOldPassword = document.querySelector('#toggleOldPassword');
+    const password = document.querySelector('#old_password');
+
+    toggleOldPassword.addEventListener('click', function (e) {
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+
+        // Toggle both classes
+        this.querySelector('i').classList.toggle('fa-eye');
+        this.querySelector('i').classList.toggle('fa-eye-slash');
+    });
+
+    const toggleNewPassword = document.querySelector('#toggleNewPassword');
+    const newPassword = document.querySelector('#new_password');
+
+    toggleNewPassword.addEventListener('click', function (e) {
+        const type = newPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+        newPassword.setAttribute('type', type);
+
+        // Toggle both classes
+        this.querySelector('i').classList.toggle('fa-eye');
+        this.querySelector('i').classList.toggle('fa-eye-slash');
+    });
+
+    const toggleConfirmPassword = document.querySelector('#toggleConfirmPassword');
+    const confirmPassword = document.querySelector('#confirm_password');
+
+    toggleConfirmPassword.addEventListener('click', function (e) {
+        const type = confirmPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+        confirmPassword.setAttribute('type', type);
+
+        // Toggle both classes
+        this.querySelector('i').classList.toggle('fa-eye');
+        this.querySelector('i').classList.toggle('fa-eye-slash');
     });
 </script>
 {% endblock %}

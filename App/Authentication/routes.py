@@ -13,15 +13,7 @@ auth = Blueprint('auth', __name__)
 
 @login_manager.user_loader
 def load_user(user_id):
-    account_type = session.get('account_type')
-    if account_type == 'masyarakat':
-        return Masyarakat.query.get(str(user_id)) # Kembalikan objek Masyarakat
-    elif account_type == 'petugas':
-        return Petugas.query.get(str(user_id))   # Kembalikan objek Petugas
-    elif account_type == 'admin':
-        return AppAdmin.query.get(str(user_id))  # Kembalikan objek AppAdmin
-    else:
-        return None
+    return User.query.get(str(user_id))  # Ambil objek User langsung
 
 def generate_username(email):
     """Generate a username from the email address."""
@@ -33,19 +25,14 @@ def generate_username(email):
 def login():
     """Handles user login."""
     if current_user.is_authenticated:
-        if current_user.user_type == 'masyarakat':
-            return redirect(url_for('views.index'))
-        elif current_user.user_type == 'petugas':
-            return redirect(url_for('officer.index'))
+        return redirect(url_for('views.index'))
 
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
 
         # Cari user berdasarkan email di tabel Masyarakat dan Petugas
-        user = User.query.join(Masyarakat, User.id == Masyarakat.user_id).filter_by(email=email).first()
-        if not user:
-            user = User.query.join(Petugas, User.id == Petugas.user_id).filter_by(email=email).first()
+        user = User.query.filter_by(email=email).first()
 
         if user:
             # Tentukan tipe user dan ambil objek yang sesuai
@@ -53,13 +40,15 @@ def login():
                 user_data = user.masyarakat
             elif user.user_type == 'petugas':
                 user_data = user.petugas
+            elif user.user_type == 'admin':
+                user_data = user.admin
             else:
-                flash("Tipe akun tidak valid.", category='error')
+                flash("Tipe akun tidak valid.", category='danger')
                 return redirect(url_for('auth.login', email=email))
 
             # Gunakan user_data.password_hash untuk verifikasi password
-            if check_password_hash(user_data.password_hash, password): 
-                if user.user_type == 'masyarakat':    
+            if check_password_hash(user.password_hash, password): 
+                if user.user_type == 'masyarakat':
                     login_user(user_data, remember=True)
                     session['account_type'] = user.user_type 
                     flash("Berhasil Masuk!", category='success')
@@ -69,8 +58,13 @@ def login():
                     session['account_type'] = user.user_type 
                     flash("Berhasil Masuk!", category='success')
                     return redirect(url_for('officer.index')) # Rute untuk petugas
+                elif user.user_type == 'admin':
+                    login_user(user_data, remember=True)
+                    session['account_type'] = user.user_type 
+                    flash("Berhasil Masuk!", category='success')
+                    return redirect(url_for('app_admin.index')) # Rute untuk petugas
             else:
-                flash("Kata sandi salah, silakan coba lagi.", category='error')
+                flash("Kata sandi salah, silakan coba lagi.", category='danger')
                 return redirect(url_for('auth.login', email=email))
         else:
             flash("Akun anda belum terdaftar, silakan daftar terlebih dahulu", category='warning')
@@ -99,8 +93,14 @@ def register():
             flash('Kata sandi tidak cocok.', category='danger')
         else:
             try:
+                print(username)
+
                 # Buat objek User dengan user_type 'masyarakat'
-                new_user = User(user_type='masyarakat')
+                new_user = User(
+                    user_type='masyarakat',
+                    email=email,
+                    username=username,
+                    password_hash=generate_password_hash(password, method='pbkdf2'))
                 db.session.add(new_user)
                 db.session.flush()  # Simpan perubahan untuk mendapatkan user_id
 
@@ -108,9 +108,6 @@ def register():
                 new_user_data = Masyarakat(
                     user_id=new_user.id,  # Gunakan new_user.id
                     nama_lengkap='Nama Lengkap',  # Ganti dengan input nama lengkap
-                    email=email,
-                    username=username,
-                    password_hash=generate_password_hash(password, method='pbkdf2'),
                     alamat='Alamat',  # Ganti dengan input alamat
                     no_telepon='Nomor Telepon'  # Ganti dengan input nomor telepon
                 )
@@ -134,7 +131,7 @@ def register():
 def register_officer():
     """Handles user registration."""
     if current_user.is_authenticated:
-        return redirect(url_for('officer.index'))
+        return redirect(url_for('views.index'))
 
     if request.method == 'POST':
         email = request.form['email_address']
@@ -150,8 +147,14 @@ def register_officer():
             flash('Kata sandi tidak cocok.', category='danger')
         else:
             try:
+                print(username)
+
                 # Buat objek User dengan user_type 'masyarakat'
-                new_user = User(user_type='petugas')
+                new_user = User(
+                    user_type='petugas',
+                    email=email,
+                    username=username,
+                    password_hash=generate_password_hash(password, method='pbkdf2'))
                 db.session.add(new_user)
                 db.session.flush()  # Simpan perubahan untuk mendapatkan user_id
 
@@ -159,11 +162,8 @@ def register_officer():
                 new_user_data = Petugas(
                     user_id=new_user.id,  # Gunakan new_user.id
                     nama_petugas='Nama Lengkap',  # Ganti dengan input nama lengkap
-                    email=email,
-                    username=username,
-                    password_hash=generate_password_hash(password, method='pbkdf2'),
-                    no_telepon='Nomor Telepon',  # Ganti dengan input nomor telepon
-                    area_tugas='Area Tugas'
+                    area_tugas='Area Tugas',  # Ganti dengan input alamat
+                    no_telepon='Nomor Telepon'  # Ganti dengan input nomor telepon
                 )
 
                 db.session.add(new_user_data)
@@ -189,5 +189,4 @@ def register_officer():
 @login_required
 def logout():
     logout_user()
-    session.clear() # Pastikan session dibersihkan
     return redirect(url_for('auth.login'))

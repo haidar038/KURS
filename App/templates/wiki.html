@@ -36,32 +36,88 @@
         </div>
     </div>
     <!-- Pagination -->
-    <nav aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
-            {% if artikel_paginate.has_prev %}
-            <li class="page-item">
-                <a class="page-link text-success" href="{{ url_for('views.wiki', page=artikel_paginate.prev_num) }}">Sebelumnya</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled">
-                <a class="page-link text-success" href="#">Sebelumnya</a>
-            </li>
-            {% endif %} {% for page_num in artikel_paginate.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %} {% if page_num %} {% if page_num == artikel_paginate.page %}
-            <li class="page-item active"><a class="page-link bg-success border-success">{{ page_num }}</a></li>
-            {% else %}
-            <li class="page-item"><a class="page-link text-success" href="{{ url_for('views.wiki', page=page_num) }}">{{ page_num }}</a></li>
-            {% endif %} {% else %}
-            <li class="page-item disabled"><a class="page-link text-success" href="#">…</a></li>
-            {% endif %} {% endfor %} {% if artikel_paginate.has_next %}
-            <li class="page-item">
-                <a class="page-link text-success" href="{{ url_for('views.wiki', page=artikel_paginate.next_num) }}">Selanjutnya</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled">
-                <a class="page-link text-success" href="#">Selanjutnya</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
+    <div class="d-flex justify-content-center">
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                {% if artikel_paginate.has_prev %}
+                <li class="page-item">
+                    <a class="page-link text-success" href="{{ url_for('views.wiki', page=artikel_paginate.prev_num) }}" aria-label="Previous">
+                        <span aria-hidden="true">«</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <a class="page-link text-success" href="#" aria-label="Previous">
+                        <span aria-hidden="true">«</span>
+                    </a>
+                </li>
+                {% endif %} {% if artikel_paginate.page <= 3 %} {% for page_num in range(1, min(artikel_paginate.pages, 4) + 1) %} {% if page_num == artikel_paginate.page %}
+                <li class="page-item active" aria-current="page">
+                    <span class="page-link bg-success border-success">{{ page_num }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link text-success" href="{{ url_for('views.wiki', page=page_num) }}">{{ page_num }}</a>
+                </li>
+                {% endif %} {% endfor %} {% if artikel_paginate.pages > 3 %}
+                <li class="page-item disabled">
+                    <a class="page-link text-success" href="#">…</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link text-success" href="{{ url_for('views.wiki', page=artikel_paginate.pages) }}">{{ artikel_paginate.pages }}</a>
+                </li>
+                {% endif %} {% elif artikel_paginate.page >= artikel_paginate.pages - 2 %}
+                <li class="page-item">
+                    <a class="page-link text-success" href="{{ url_for('views.wiki', page=1) }}">1</a>
+                </li>
+                <li class="page-item disabled">
+                    <a class="page-link text-success" href="#">…</a>
+                </li>
+                {% for page_num in range(max(1, artikel_paginate.pages - 3), artikel_paginate.pages + 1) %} {% if page_num == artikel_paginate.page %}
+                <li class="page-item active" aria-current="page">
+                    <span class="page-link bg-success border-success">{{ page_num }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link text-success" href="{{ url_for('views.wiki', page=page_num) }}">{{ page_num }}</a>
+                </li>
+                {% endif %} {% endfor %} {% else %}
+                <li class="page-item">
+                    <a class="page-link text-success" href="{{ url_for('views.wiki', page=1) }}">1</a>
+                </li>
+                <li class="page-item disabled">
+                    <a class="page-link text-success" href="#">…</a>
+                </li>
+                {% for page_num in range(artikel_paginate.page - 1, artikel_paginate.page + 2) %} {% if page_num == artikel_paginate.page %}
+                <li class="page-item active" aria-current="page">
+                    <span class="page-link bg-success border-success">{{ page_num }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link text-success" href="{{ url_for('views.wiki', page=page_num) }}">{{ page_num }}</a>
+                </li>
+                {% endif %} {% endfor %}
+                <li class="page-item disabled">
+                    <a class="page-link text-success" href="#">…</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link text-success" href="{{ url_for('views.wiki', page=artikel_paginate.pages) }}">{{ artikel_paginate.pages }}</a>
+                </li>
+                {% endif %} {% if artikel_paginate.has_next %}
+                <li class="page-item">
+                    <a class="page-link text-success" href="{{ url_for('views.wiki', page=artikel_paginate.next_num) }}" aria-label="Next">
+                        <span aria-hidden="true">»</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="page-item disabled">
+                    <a class="page-link text-success" href="#" aria-label="Next">
+                        <span aria-hidden="true">»</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
 </div>
 {% endblock %}

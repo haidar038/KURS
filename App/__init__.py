@@ -9,63 +9,71 @@ from flask_migrate import Migrate
 from flask_ckeditor import CKEditor
 from dotenv import load_dotenv
 
-app = Flask(__name__)
+load_dotenv()
 
 socketio = SocketIO(cors_allowed_origins="*")
 db = SQLAlchemy()
 ckeditor = CKEditor()
 login_manager = LoginManager()
 toastr = Toastr()
-buffer = io.BytesIO()
-migrate = Migrate(app, db)
-load_dotenv()
-
-UPLOAD_FOLDER = 'App/static/img/profile'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True) # Membuat folder jika belum ada
 
 def create_app():
+    app = Flask(__name__)
+
     UPLOAD_FOLDER = os.path.join(app.root_path, 'static/uploads')
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Pastikan folder ada
 
-    app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "kursampah") # Gunakan variabel environment atau nilai default
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{os.environ.get("MYSQLUSER")}:{os.environ.get("MYSQLPASSWORD")}@{os.environ.get("MYSQLHOST")}:{os.environ.get("MYSQLPORT")}/{os.environ.get("MYSQLDATABASE")}'
+    app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "kursampah")  # Gunakan variabel environment atau nilai default
+    app.config['SQLALCHEMY_DATABASE_URI'] = (
+        f'mysql+pymysql://{os.environ.get("MYSQLUSER")}:'
+        f'{os.environ.get("MYSQLPASSWORD")}@'
+        f'{os.environ.get("MYSQLHOST")}:'
+        f'{os.environ.get("MYSQLPORT")}/'
+        f'{os.environ.get("MYSQLDATABASE")}'
+    )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['CKEDITOR_PKG_TYPE'] = 'basic'
     app.config['CKEDITOR_ENABLE_CSRF'] = True
-    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-    # Konfigurasi folder upload
+    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER  # Konfigurasi folder upload
 
     db.init_app(app)
     socketio.init_app(app)
     login_manager.init_app(app)
     ckeditor.init_app(app)
     toastr.init_app(app)
+    migrate = Migrate(app, db)
 
-    # from .admin.routes import admin_page
     from .Authentication.routes import auth
     from .Officer.routes import officer
+    from .Admin.routes import app_admin
     from .views.routes import views
 
     app.register_blueprint(auth, url_prefix='/')
     app.register_blueprint(views, url_prefix='/')
     app.register_blueprint(officer, url_prefix='/')
+    app.register_blueprint(app_admin, url_prefix='/')
 
     login_manager.login_view = 'auth.login'
 
-    from .models import AppAdmin, User
+    from .models import AppAdmin, User, FaktorEmisiCO2
 
     with app.app_context():
         db.create_all()
 
-        if not AppAdmin.query.first():
+        if not User.query.filter_by(user_type='admin').first():
             try:
-                account_type = User(user_type='admin')
-                db.session.add(account_type)
+                new_user = User(
+                    user_type='admin',
+                    username='admin', # Memindahkan username di sini
+                    email='admin@gmail.com',  # Menetapkan email di sini
+                    password_hash=generate_password_hash('admkurs123', method='pbkdf2')
+                )
+                db.session.add(new_user)
                 db.session.flush()
 
-                admin_data = AppAdmin(id=account_type.id, username='admin', password_hash=generate_password_hash('admkurs123', method='pbkdf2'))
+                admin_data = AppAdmin(
+                    user_id=new_user.id
+                )
                 db.session.add(admin_data)
                 db.session.commit()
             except Exception as e:

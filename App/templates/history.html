@@ -26,7 +26,7 @@
                         {% if data_laporan %} {% for item in data_laporan %}
                         <tr class="align-middle">
                             <th scope="row">{{ loop.index }}</th>
-                            <td>{{ item.nama_tps | default('Belum Ada') }}</td>
+                            <td>{{ item.tps.nama | default('Belum Ada') }}</td>
                             <td>{{ item.tanggal_laporan }}</td>
                             <td>
                                 {% if item.status == '1' %}
@@ -40,7 +40,7 @@
                             <td>{{ item.berat }}</td>
                             <td>
                                 <div class="d-flex justify-content-center align-items-center justify-content-lg-center">
-                                    <a href="#" class="btn btn-light fs-3" onclick="showTPSDetails('{{ item.latitude }}', '{{ item.longitude }}', '{{ item.id }}')">
+                                    <a href="#" class="btn btn-light fs-3" onclick="showTPSDetails('{{ item.latitude }}', '{{ item.longitude }}', '{{ item.id }}', '{{ item.foto }}')">
                                         <i class="fa fa-chevron-circle-right"></i>
                                     </a>
                                 </div>
@@ -69,15 +69,17 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="map-wrapper-outer" class="d-flex justify-content-center align-items-center">
+                <div id="map-wrapper-outer" class="d-flex justify-content-center align-items-center mb-3">
                     <div id="map-wrapper-inner">
                         <div id="tps-detail-map"></div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer justify-content-between">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-                <a id="deleteReportLink" href="#" class="btn btn-danger"><i class="fa fa-trash"></i> Hapus</a>
+                <p>Foto Sampah :</p>
+                <img alt="Foto Sampah" id="reportPicture" class="img-fluid w-100" src="{{ url_for('static', filename='img/trash_default.png' ) }}" />
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <a id="deleteReportLink" href="#" class="btn btn-danger"><i class="fa fa-trash"></i> Hapus</a>
+                </div>
             </div>
         </div>
     </div>
@@ -95,7 +97,7 @@
         zoom: 10,
     });
 
-    function showTPSDetails(latitude, longitude, reportId) {
+    function showTPSDetails(latitude, longitude, reportId, reportPic) {
         $('#tpsDetailModalLabel').text('Lokasi Anda');
 
         // Hapus marker sebelumnya jika ada
@@ -117,6 +119,10 @@
         // Set delete link dengan ID laporan
         const deleteLink = document.getElementById('deleteReportLink');
         deleteLink.href = `{{ url_for('views.delete_report', id='') }}/${reportId}`;
+
+        // Set reports picture dengan ID
+        const foto = document.getElementById('reportPicture'); // Perbaiki ID elemen
+        foto.src = `${reportPic}`; // Gunakan .src, bukan setAttribute
 
         $('#tpsDetailModal').modal('show');
     }
