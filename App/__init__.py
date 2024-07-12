@@ -34,6 +34,7 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['CKEDITOR_PKG_TYPE'] = 'basic'
     app.config['CKEDITOR_ENABLE_CSRF'] = True
+    app.config['CKEDITOR_SERVE_LOCAL'] = True
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER  # Konfigurasi folder upload
 
     db.init_app(app)
