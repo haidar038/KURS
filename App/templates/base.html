@@ -193,6 +193,7 @@
         {% if page == 'home' %}
         <script>
             let nama_tps = JSON.parse('{{ nama_tps | safe }}');
+            let alamat_tps = JSON.parse('{{ alamat_tps | safe }}');
             let lat_tps = JSON.parse('{{ lat_tps | safe }}');
             let long_tps = JSON.parse('{{ long_tps | safe }}');
             var detailMap;
@@ -252,7 +253,7 @@
                 // Tambahkan marker baru
                 marker = new mapboxgl.Marker()
                     .setLngLat([tps.longitude, tps.latitude])
-                    .setPopup(new mapboxgl.Popup().setHTML('<b>' + tps.nama + tps.alamat + '</b>'))
+                    .setPopup(new mapboxgl.Popup().setHTML('<b>' + tps.nama + '</b>'))
                     .addTo(map);
 
                 // Panggil fungsi dengan index
@@ -282,7 +283,7 @@
                             startPopup.setLngLat([userLon, userLat]).setHTML('Lokasi Anda').addTo(map);
                             endPopup
                                 .setLngLat([tps.longitude, tps.latitude])
-                                .setHTML('<b>' + tps.nama + tps.alamat + '</b>')
+                                .setHTML('<b>' + tps.nama + '</b>')
                                 .addTo(map);
                         }
                     });

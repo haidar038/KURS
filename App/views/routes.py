@@ -85,6 +85,7 @@ def index():
     sampah = Laporan.query.filter_by(status='3').all()
 
     nama_tps = [namaTPS.nama for namaTPS in tps]
+    alamat_tps = [alamatTPS.nama for alamatTPS in tps]
     lat_tps = [latTPS.latitude for latTPS in tps]
     long_tps = [longTPS.longitude for longTPS in tps]
     jumlah_sampah = [jumlahSampah.berat for jumlahSampah in sampah]
@@ -111,6 +112,7 @@ def index():
     return render_template('index.html', 
                             total_ch4_dihemat=total_ch4_dihemat,
                             nama_tps=json.dumps(nama_tps),
+                            alamat_tps=json.dumps(alamat_tps),
                             lat_tps=json.dumps(lat_tps),
                             long_tps=json.dumps(long_tps),
                             vol_sampah=total_berat_sampah,
