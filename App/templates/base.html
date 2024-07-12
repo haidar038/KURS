@@ -252,7 +252,7 @@
                 // Tambahkan marker baru
                 marker = new mapboxgl.Marker()
                     .setLngLat([tps.longitude, tps.latitude])
-                    .setPopup(new mapboxgl.Popup().setHTML('<b>' + tps.nama + '</b>'))
+                    .setPopup(new mapboxgl.Popup().setHTML('<b>' + tps.nama + tps.alamat + '</b>'))
                     .addTo(map);
 
                 // Panggil fungsi dengan index
@@ -282,7 +282,7 @@
                             startPopup.setLngLat([userLon, userLat]).setHTML('Lokasi Anda').addTo(map);
                             endPopup
                                 .setLngLat([tps.longitude, tps.latitude])
-                                .setHTML('<b>' + tps.nama + '</b>')
+                                .setHTML('<b>' + tps.nama + tps.alamat + '</b>')
                                 .addTo(map);
                         }
                     });
