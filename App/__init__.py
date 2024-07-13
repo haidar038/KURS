@@ -65,20 +65,42 @@ def create_app():
             try:
                 new_user = User(
                     user_type='admin',
-                    username='admin', # Memindahkan username di sini
-                    email='admin@gmail.com',  # Menetapkan email di sini
+                    username='admin',
+                    email='admin@gmail.com',
                     password_hash=generate_password_hash('admkurs123', method='pbkdf2')
                 )
-                db.session.add(new_user)
-                db.session.flush()
+                db.session.add(new_user) 
+                db.session.flush()  
 
                 admin_data = AppAdmin(
                     user_id=new_user.id
                 )
                 db.session.add(admin_data)
                 db.session.commit()
+
             except Exception as e:
                 db.session.rollback()
-                print(f"Error during adding admin data: {e}")
+                print(f"Error during adding admin data: {e}") 
+
+        # Add Default CO2 Emission Factor if not available
+        if not FaktorEmisiCO2.query.all():
+            default_faktor = [
+                {"jenis_sampah": "Organik", "faktor_co2": 0.5},  # Example value
+                {"jenis_sampah": "Anorganik", "faktor_co2": 0.2}  # Example value
+                # Add other waste types and their CO2 emission factors as needed
+            ]
+            
+            for faktor in default_faktor:
+                new_faktor = FaktorEmisiCO2(
+                    jenis_sampah=faktor['jenis_sampah'],
+                    faktor_co2=faktor['faktor_co2']
+                )
+                db.session.add(new_faktor)
+
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error during adding default CO2 emission factors: {e}") 
 
     return app

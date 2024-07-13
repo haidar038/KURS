@@ -41,7 +41,7 @@ def login():
             elif user.user_type == 'petugas':
                 user_data = user.petugas
             elif user.user_type == 'admin':
-                user_data = user.admin
+                user_data = user.app_admin
             else:
                 flash("Tipe akun tidak valid.", category='danger')
                 return redirect(url_for('auth.login', email=email))

@@ -6,11 +6,19 @@ from datetime import datetime
 from . import db  # Ensure correct relative import
 
 class User(db.Model, UserMixin):
+    __tablename__ = 'user'
+
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_type = db.Column(db.String(20), nullable=False)
     email = db.Column(db.String(255), nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    is_confirmed = db.Column(db.Boolean, nullable=False, default=False)
+    confirmed_on = db.Column(db.DateTime, nullable=True)
+
+    masyarakat = db.relationship('Masyarakat', backref='user', uselist=False, lazy=True, cascade="all, delete-orphan")
+    petugas = db.relationship('Petugas', backref='user', uselist=False, lazy=True, cascade="all, delete-orphan")
+    app_admin = db.relationship('AppAdmin', backref='user', uselist=False, lazy=True, cascade="all, delete-orphan") 
 
     # @hybrid_property
     # def password(self):
@@ -23,12 +31,24 @@ class User(db.Model, UserMixin):
     # def verify_password(self, password):
     #     return check_password_hash(self.password_hash, password)
 
+    def __repr__(self):
+        return f'<User {self.username}>'
+
+    def get_id(self):
+        return str(self.id)
+
 class AppAdmin(db.Model, UserMixin):
     __tablename__ = 'app_admin'
-    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), primary_key=True)
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id', ondelete='CASCADE'), unique=True, nullable=False)
+
     foto_profil = db.Column(db.String(255), nullable=True)
 
-    user = db.relationship('User', backref=db.backref('admin', uselist=False))
+    # user = db.relationship('User', backref=db.backref('admin', uselist=False))
+
+    def __repr__(self):
+        return f'<AppAdmin {self.id}>' 
 
     def get_id(self):
         return str(self.user_id)
@@ -36,14 +56,20 @@ class AppAdmin(db.Model, UserMixin):
 # Tabel untuk data Masyarakat
 class Masyarakat(db.Model, UserMixin):
     __tablename__ = 'masyarakat'
-    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), primary_key=True, default=lambda: str(uuid.uuid4()))
+    
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id', ondelete='CASCADE'), unique=True, nullable=False)
+
     nama_lengkap = db.Column(db.String(100), nullable=False)
     alamat = db.Column(db.Text, nullable=False)
     no_telepon = db.Column(db.String(20), nullable=False)
     foto_profil = db.Column(db.String(255), nullable=True)
     poin = db.Column(db.Integer, default=0) # Atribut baru untuk poin
 
-    user = db.relationship('User', backref=db.backref('masyarakat', uselist=False))
+    # user = db.relationship('User', backref=db.backref('masyarakat', uselist=False))
+
+    def __repr__(self):
+        return f'<Masyarakat {self.nama_lengkap}>'
 
     def get_id(self):
         return str(self.user_id)
@@ -55,14 +81,21 @@ class Masyarakat(db.Model, UserMixin):
 
 class Petugas(db.Model, UserMixin):
     __tablename__ = 'petugas'
-    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), primary_key=True, default=lambda: str(uuid.uuid4()))
+    
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id', ondelete='CASCADE'), unique=True, nullable=False)
+
     nama_petugas = db.Column(db.String(100), nullable=False)
     area_tugas = db.Column(db.String(100), nullable=False)
     no_telepon = db.Column(db.String(20), nullable=False)
     foto_profil = db.Column(db.String(255), nullable=True)
     poin = db.Column(db.Integer, default=0)  # Tambahkan atribut poin
 
-    user = db.relationship('User', backref=db.backref('petugas', uselist=False))
+    # user = db.relationship('User', backref=db.backref('petugas', uselist=False))
+
+    def __repr__(self):
+        return f'<Petugas {self.nama_petugas}>'
+
     def get_id(self):
         return str(self.user_id)
     

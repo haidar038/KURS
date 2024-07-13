@@ -105,7 +105,7 @@ def reports_list():
     for laporan in data_laporan.items:
         laporan.tanggal_laporan = format_tanggal_locale(laporan.tanggal_laporan)
         # Mengambil data TPS jika tps_id ada
-        if laporan.tps_id: 
+        if laporan.tps_id:
             laporan.tps = TPS.query.get(laporan.tps_id) 
 
     return render_template('officer_page/laporan.html', foto_laporan=foto_laporan, data_tps=data_tps, data_laporan=data_laporan, page=page, per_page=per_page, page_name='reports')
