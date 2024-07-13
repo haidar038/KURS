@@ -5,11 +5,12 @@ from flask_login import current_user, login_required
 from babel.dates import format_datetime
 from sqlalchemy.orm.exc import NoResultFound
 from collections import defaultdict
+from math import radians, sin, cos, sqrt, atan2, asin
 # Import other necessary modules and models
 from App.models import TPS, Artikel, Laporan, Masyarakat, User, FaktorEmisiCO2
 from App import db
 
-import pytz, os, json
+import pytz, os, json, requests
 
 views = Blueprint('views', __name__)
 
@@ -71,6 +72,48 @@ def serve_manifest():
 def serve_sw():
     return send_file('sw.js', mimetype='application/javascript')
 
+def haversine(lat1, lon1, lat2, lon2):
+    """
+    Calculate the great circle distance between two points 
+    on the earth (specified in decimal degrees).
+    Source: https://stackoverflow.com/a/4913653/2447715
+    """
+    R = 6371  # Radius of earth in kilometers. Use 3956 for miles
+    
+    dLat = radians(lat2 - lat1)
+    dLon = radians(lon2 - lon1)
+    lat1 = radians(lat1)
+    lat2 = radians(lat2)
+
+    a = sin(dLat/2)**2 + cos(lat1)*cos(lat2)*sin(dLon/2)**2
+    c = 2*asin(sqrt(a))
+
+    return R * c
+
+@views.route('/get_tps_data/<latitude>/<longitude>')
+@login_required 
+def get_tps_data(latitude, longitude):
+    user_latitude = float(latitude)
+    user_longitude = float(longitude)
+    radius_km = float(request.args.get('radius', default=6)) # Get radius from query parameter
+
+    all_tps = TPS.query.all()
+
+    nearby_tps = []
+    for tps in all_tps:
+        distance = haversine(user_latitude, user_longitude, tps.latitude, tps.longitude)
+        if distance <= radius_km: # Filter based on the radius
+            nearby_tps.append({
+                'nama': tps.nama,
+                'alamat': tps.alamat,
+                'latitude': tps.latitude, 
+                'longitude': tps.longitude,
+                'jarak': round(distance, 2), 
+                'waktu_tempuh': int(distance / 40 * 60)
+            })
+
+    return jsonify(nearby_tps)
+
 @views.route('/')
 @login_required
 def index():
@@ -112,11 +155,10 @@ def index():
     return render_template('index.html', 
                             total_ch4_dihemat=total_ch4_dihemat,
                             nama_tps=json.dumps(nama_tps),
-                            alamat_tps=json.dumps(alamat_tps),
                             lat_tps=json.dumps(lat_tps),
                             long_tps=json.dumps(long_tps),
                             vol_sampah=total_berat_sampah,
-                            tps=tps,
+                            tps=tps, # You still might need this for modal or other parts of the page
                             user=user,
                             artikel=artikel,
                             round=round,

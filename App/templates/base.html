@@ -192,11 +192,14 @@
         <!-- MAPS API SCRIPT -->
         {% if page == 'home' %}
         <script>
+            let map; // Declare map globally
+            let directions; // Declare directions globally
+            let marker, startPopup, endPopup;
+
             let nama_tps = JSON.parse('{{ nama_tps | safe }}');
-            let alamat_tps = JSON.parse('{{ alamat_tps | safe }}');
             let lat_tps = JSON.parse('{{ lat_tps | safe }}');
             let long_tps = JSON.parse('{{ long_tps | safe }}');
-            var detailMap;
+            let mapLoaded = false; // Flag to track if the map has fully loaded
 
             let data_tps = nama_tps.map((nama, index) => ({
                 nama: nama,
@@ -204,37 +207,54 @@
                 longitude: parseFloat(long_tps[index]),
             }));
 
-            console.log(nama_tps);
-            console.log(lat_tps);
-            console.log(long_tps);
+            function initMap() {
+                mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q';
+                map = new mapboxgl.Map({
+                    container: 'tps-detail-map',
+                    style: 'mapbox://styles/mapbox/streets-v11',
+                    center: [long_tps[0], lat_tps[0]],
+                    zoom: 10,
+                    interactive: false,
+                });
 
-            mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q';
-            const map = new mapboxgl.Map({
-                container: 'tps-detail-map',
-                style: 'mapbox://styles/mapbox/streets-v11',
-                center: [long_tps[0], lat_tps[0]],
-                zoom: 10,
-                interactive: true,
-            });
+                directions = new MapboxDirections({
+                    accessToken: mapboxgl.accessToken,
+                    unit: 'metric',
+                    profile: 'mapbox/driving-traffic',
+                    controls: false,
+                    interactive: false, // Tambahkan ini untuk menonaktifkan interaksi klik pada peta untuk mengubah rute
+                });
 
-            let marker, startPopup, endPopup;
+                //directions.interactive(false);
+                map.addControl(directions, 'top-left');
+                map.addControl(new mapboxgl.NavigationControl());
 
-            const directions = new MapboxDirections({
-                accessToken: mapboxgl.accessToken,
-                unit: 'metric',
-                profile: 'mapbox/driving-traffic',
-                controls: false,
-                interactive: false, // Tambahkan ini untuk menonaktifkan interaksi klik pada peta untuk mengubah rute
-            });
+                map.on('load', () => {
+                    startPopup = new mapboxgl.Popup({ closeOnClick: false }).setHTML('<b>' + 'Lokasi Anda' + '</b>');
+                    endPopup = new mapboxgl.Popup({ closeOnClick: false });
 
-            //directions.interactive(false);
-            map.addControl(directions, 'top-left');
-            map.addControl(new mapboxgl.NavigationControl());
+                    mapLoaded = true;
 
-            map.on('load', () => {
-                startPopup = new mapboxgl.Popup({ closeOnClick: false, offset: 25 }).setHTML('Lokasi Anda');
-                endPopup = new mapboxgl.Popup({ closeOnClick: false, offset: 25 });
-            });
+                    // Loop through TPS data and calculate routes
+                    data_tps.forEach((tps, index) => {
+                        showRouteToTPS(tps, index); // Calculate and display for EACH TPS
+                    });
+
+                    // Fetch user location and load TPS data
+                    getUserLocation(initializeTPSData);
+                });
+            }
+
+            // Function to initialize TPS data (after user location is available)
+            function initializeTPSData(userLat, userLon) {
+                // Make AJAX call to get TPS data
+                getTPSData(userLat, userLon, 6);
+
+                // Now you can safely loop through the TPS data and calculate routes
+                data_tps.forEach((tps, index) => {
+                    showRouteToTPS(tps, index, userLat, userLon);
+                });
+            }
 
             // Fungsi untuk menampilkan detail TPS dan peta, serta menghitung jarak
             function showTPSDetails(index) {
@@ -245,12 +265,11 @@
                     zoom: 15,
                 });
 
-                // Hapus marker lama jika ada
+                // Ensure marker is removed before creating a new one
                 if (marker) {
                     marker.remove();
                 }
 
-                // Tambahkan marker baru
                 marker = new mapboxgl.Marker()
                     .setLngLat([tps.longitude, tps.latitude])
                     .setPopup(new mapboxgl.Popup().setHTML('<b>' + tps.nama + '</b>'))
@@ -268,49 +287,55 @@
                 getUserLocation((userLat, userLon) => {
                     directions.setOrigin([userLon, userLat]);
                     directions.setDestination([tps.longitude, tps.latitude]);
-
                     directions.on('route', (e) => {
                         if (e.route && e.route[0]) {
                             const route = e.route[0];
-                            const distance = route.distance / 1000; // konversi ke kilometer
-                            const duration = Math.round(route.duration / 60); // konversi ke menit
+                            const distance = route.distance / 1000;
+                            const duration = Math.round(route.duration / 60);
 
-                            // Tampilkan di card yang tepat
                             $('#jarak-' + (index + 1)).text(distance.toFixed(2) + ' km');
                             $('#waktu-' + (index + 1)).text(duration + ' menit');
 
-                            // Update popup
-                            startPopup.setLngLat([userLon, userLat]).setHTML('Lokasi Anda').addTo(map);
-                            endPopup
-                                .setLngLat([tps.longitude, tps.latitude])
-                                .setHTML('<b>' + tps.nama + '</b>')
-                                .addTo(map);
+                            if (mapLoaded) {
+                                // Update popup positions once after route is calculated
+                                startPopup
+                                    .setLngLat([userLon, userLat])
+                                    .setHTML('<b>' + 'Lokasi Anda' + '</b>')
+                                    .addTo(map);
+
+                                endPopup
+                                    .setLngLat([tps.longitude, tps.latitude])
+                                    .setHTML('<b>' + tps.nama + '</b>')
+                                    .addTo(map);
+                            }
                         }
                     });
                 });
             }
 
+            // Initialize the map when the document is ready
+            document.addEventListener('DOMContentLoaded', initMap);
+
             $('#tpsDetailModal').on('shown.bs.modal', function () {
-                // Memaksa Mapbox untuk menggambar ulang peta dan menyesuaikan ukuran canvas
-                map.resize();
+                map.resize(); // No need for conditional resizing
             });
 
+            // Ensure calculations run after the page content is fully loaded:
             document.addEventListener('DOMContentLoaded', (event) => {
                 data_tps.forEach((tps, index) => {
-                    showRouteToTPS(tps, index);
+                    showRouteToTPS(tps, index); // Call after elements are ready
                 });
+            });
+
+            // After document loads
+            document.addEventListener('DOMContentLoaded', () => {
+                getUserLocation(getTPSData);
             });
 
             function getUserLocation(callback) {
                 if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(function (position) {
-                        const userLat = position.coords.latitude;
-                        const userLon = position.coords.longitude;
-                        console.log('Latitude: ' + userLat + ', Longitude: ' + userLon);
-
-                        if (callback) {
-                            callback(userLat, userLon);
-                        }
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        callback(position.coords.latitude, position.coords.longitude);
                     }, showError);
                 } else {
                     console.error('Geolocation is not supported by this browser.');
@@ -321,25 +346,65 @@
                 console.error('Error getting user location:', error);
             }
 
-            // Fungsi untuk menghitung jarak antara dua titik koordinat (dalam kilometer)
-            function calculateDistance(lat1, lon1, lat2, lon2) {
-                var R = 6371; // Radius bumi dalam kilometer
-                var dLat = deg2rad(lat2 - lat1);
-                var dLon = deg2rad(lon2 - lon1);
-                var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                var d = R * c; // Jarak dalam kilometer
-                return d;
+            // Function to get TPS data (replace with your Flask route URL)
+            let radius = 6; // Default radius in kilometers, matching server-side default
+            function getTPSData(latitude, longitude) {
+                $.ajax({
+                    url: `/get_tps_data/${latitude}/${longitude}?radius=${radius}`,
+                    type: 'GET',
+                    success: function (response) {
+                        updateTPSList(response);
+                    },
+                    error: function (error) {
+                        console.error('AJAX Error:', error);
+                    },
+                });
             }
 
-            function deg2rad(deg) {
-                return deg * (Math.PI / 180);
-            }
+            // Function to update the TPS list (called after AJAX)
+            function updateTPSList(tpsData) {
+                // 1. Get a reference to your #tps-list container
+                const tpsListContainer = document.getElementById('tps-list');
 
-            function hitungWaktuTempuh(jarak) {
-                var waktuJam = jarak / 40;
-                var waktuMenit = Math.round(waktuJam * 60);
-                return waktuMenit + ' menit';
+                // 2. Clear the existing content in the container
+                tpsListContainer.innerHTML = ''; // This will remove all child elements
+
+                // 3. Process and add new TPS cards from tpsData
+                tpsData.forEach((dataTps, index) => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.classList.add('card', 'card-body', 'rounded-4', 'shadow-sm', 'mb-3');
+
+                    cardDiv.innerHTML = `
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="card-title fw-bold">${dataTps.nama} - ${dataTps.alamat}</h5>
+                                <div class="card-text d-flex gap-2 align-items-center">
+                                    Jarak: 
+                                    <span class="d-flex">
+                                        <ion-icon class="text-danger" name="location"></ion-icon>
+                                    </span> 
+                                    <span class="fw-bold">
+                                        ${dataTps.jarak} km
+                                    </span>
+                                </div>
+                                <div class="card-text d-flex gap-2 align-items-center">
+                                    Waktu Tempuh: 
+                                    <span class="d-flex">
+                                        <ion-icon class="text-primary" name="time"></ion-icon>
+                                    </span> 
+                                    <span class="fw-bold">
+                                        ${dataTps.waktu_tempuh} menit
+                                    </span>
+                                </div>
+                            </div>
+                            <a href="#" class="btn d-flex align-items-center fs-3" 
+                               onclick="showTPSDetails(${index})">
+                                <ion-icon name="chevron-forward"></ion-icon>
+                            </a>
+                        </div> 
+                    `;
+                    tpsListContainer.appendChild(cardDiv);
+                });
             }
         </script>
         {% endif %}

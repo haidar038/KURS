@@ -35,22 +35,7 @@
             {% endfor %} {% endif %} {% endwith %}
             <hr />
             <p class="fw-bold h5">Lokasi TPS Terdekat</p>
-            {% for data_tps in tps %}
-            <div class="card card-body bg-secondary-subtle rounded-4 shadow-sm mb-3">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h5 class="card-title fw-bold">{{ data_tps.nama }} - {{ data_tps.alamat }}</h5>
-                        <div class="card-text d-flex gap-2 align-items-center">
-                            Jarak: <span class="d-flex"><ion-icon class="text-danger" name="location"></ion-icon></span> <span class="fw-bold" id="jarak-{{ loop.index }}"></span>
-                        </div>
-                        <div class="card-text d-flex gap-2 align-items-center">
-                            Waktu Tempuh: <span class="d-flex"><ion-icon class="text-primary" name="time"></ion-icon></span> <span class="fw-bold" id="waktu-{{ loop.index }}"></span>
-                        </div>
-                    </div>
-                    <a href="#" class="btn d-flex align-items-center fs-3" onclick="showTPSDetails({{ loop.index0 }})"><ion-icon name="chevron-forward"></ion-icon></a>
-                </div>
-            </div>
-            {% endfor %}
+            <div id="tps-list"></div>
             <hr />
             <p class="fw-bold h5">Artikel</p>
             <div id="articleCarousel" class="carousel slide">
