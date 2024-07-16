@@ -16,7 +16,6 @@
                         <tr>
                             <th scope="col">#</th>
                             <th scope="col">TPS Tujuan</th>
-                            <th scope="col">Tanggal</th>
                             <th scope="col">Status</th>
                             <th scope="col">Volume (kg)</th>
                             <th scope="col">Detail</th>
@@ -27,7 +26,6 @@
                         <tr class="align-middle">
                             <th scope="row">{{ loop.index }}</th>
                             <td>{{ item.tps.nama | default('Belum Ada') }}</td>
-                            <td>{{ item.tanggal_laporan }}</td>
                             <td>
                                 {% if item.status == '1' %}
                                 <span class="badge text-bg-secondary">Menunggu</span>
@@ -40,7 +38,7 @@
                             <td>{{ item.berat }}</td>
                             <td>
                                 <div class="d-flex justify-content-center align-items-center justify-content-lg-center">
-                                    <a href="#" class="btn btn-light fs-3" onclick="showTPSDetails('{{ item.latitude }}', '{{ item.longitude }}', '{{ item.id }}', '{{ item.foto }}')">
+                                    <a href="#" class="btn btn-light fs-3" onclick="showTPSDetails('{{ item.latitude }}', '{{ item.longitude }}', '{{ item.id }}', '{{ item.foto }}', '{{ item.tanggal_laporan }}')">
                                         <i class="fa fa-chevron-circle-right"></i>
                                     </a>
                                 </div>
@@ -69,6 +67,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <p class="mb-3" id="tglLaporan"></p>
                 <div id="map-wrapper-outer" class="d-flex justify-content-center align-items-center mb-3">
                     <div id="map-wrapper-inner">
                         <div id="tps-detail-map"></div>
@@ -76,10 +75,9 @@
                 </div>
                 <p>Foto Sampah :</p>
                 <img alt="Foto Sampah" id="reportPicture" class="img-fluid w-100" src="{{ url_for('static', filename='img/trash_default.png' ) }}" />
-                <div class="modal-footer justify-content-between">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-                    <a id="deleteReportLink" href="#" class="btn btn-danger"><i class="fa fa-trash"></i> Hapus</a>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -89,7 +87,7 @@
     let map;
     let marker;
 
-    mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q';
+    mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseWxtanB4ZzBkOGIyaXM2NXpqNHltbTEifQ.3UzDa633gOXAJMYeAJZBvQ';
     map = new mapboxgl.Map({
         container: 'tps-detail-map',
         style: 'mapbox://styles/mapbox/streets-v11',
@@ -97,7 +95,22 @@
         zoom: 10,
     });
 
-    function showTPSDetails(latitude, longitude, reportId, reportPic) {
+    // Add satellite layer
+    map.on('load', function () {
+        map.addLayer({
+            id: 'satellite',
+            source: {
+                type: 'raster',
+                url: 'mapbox://mapbox.satellite',
+                tileSize: 256,
+            },
+            type: 'raster',
+            minzoom: 0,
+            maxzoom: 22,
+        });
+    });
+
+    function showTPSDetails(latitude, longitude, reportId, reportPic, tglLaporan) {
         $('#tpsDetailModalLabel').text('Lokasi Anda');
 
         // Hapus marker sebelumnya jika ada
@@ -117,12 +130,15 @@
         });
 
         // Set delete link dengan ID laporan
-        const deleteLink = document.getElementById('deleteReportLink');
-        deleteLink.href = `{{ url_for('views.delete_report', id='') }}/${reportId}`;
+        // const deleteLink = document.getElementById('deleteReportLink');
+        // deleteLink.href = `{{ url_for('views.delete_report', id='') }}/${reportId}`;
 
         // Set reports picture dengan ID
         const foto = document.getElementById('reportPicture'); // Perbaiki ID elemen
         foto.src = `${reportPic}`; // Gunakan .src, bukan setAttribute
+
+        const tanggalLaporan = document.getElementById('tglLaporan'); // Perbaiki ID elemen
+        tanggalLaporan.innerHTML = `<b>Tanggal Laporan</b>: ${tglLaporan}`; //
 
         $('#tpsDetailModal').modal('show');
     }

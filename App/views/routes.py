@@ -1,16 +1,17 @@
-from flask import Blueprint, render_template, send_file, request, redirect, flash, url_for, current_app, send_from_directory, jsonify
+from flask import Blueprint, render_template, send_file, request, redirect, flash, url_for, current_app, send_from_directory, jsonify, g
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import current_user, login_required
 from babel.dates import format_datetime
-from sqlalchemy.orm.exc import NoResultFound
+from flask_socketio import emit
 from collections import defaultdict
-from math import radians, sin, cos, sqrt, atan2, asin
+from math import radians, sin, cos, sqrt, asin
 # Import other necessary modules and models
-from App.models import TPS, Artikel, Laporan, Masyarakat, User, FaktorEmisiCO2
+from App.models import TPS, Artikel, Laporan, Masyarakat, User, Notification, Petugas
+from App.utils import get_unread_notifications
 from App import db
 
-import pytz, os, json, requests
+import pytz, os, json
 
 views = Blueprint('views', __name__)
 
@@ -63,6 +64,14 @@ def hitung_emisi_ch4(berat_sampah, doc=0.5, r=0.3, o=0.0):
     """
     emisi_ch4 = 1.0 * berat_sampah * doc * (1 - r) * (1 - o)
     return emisi_ch4
+
+@views.context_processor
+def inject_unread_notifications():
+  if current_user.is_authenticated:
+    unread_notifications = get_unread_notifications()
+  else:
+    unread_notifications = []
+  return dict(unread_notifications=unread_notifications)
 
 @views.route('/manifest.json')
 def serve_manifest():
@@ -128,7 +137,6 @@ def index():
     sampah = Laporan.query.filter_by(status='3').all()
 
     nama_tps = [namaTPS.nama for namaTPS in tps]
-    alamat_tps = [alamatTPS.nama for alamatTPS in tps]
     lat_tps = [latTPS.latitude for latTPS in tps]
     long_tps = [longTPS.longitude for longTPS in tps]
     jumlah_sampah = [jumlahSampah.berat for jumlahSampah in sampah]
@@ -149,8 +157,13 @@ def index():
         if laporan.jenis_sampah == 'Organik':  # Hanya hitung untuk sampah organik
             total_ch4_dihemat += hitung_emisi_ch4(laporan.berat)  # Konversi kg ke ton
     print(total_ch4_dihemat)
+    print(json.dumps(nama_tps))
+    print(json.dumps(lat_tps))
+    print(json.dumps(long_tps))
 
     user = Masyarakat.query.filter_by(user_id=current_user.id).first()
+
+    unread_notifications = get_unread_notifications()
 
     return render_template('index.html', 
                             total_ch4_dihemat=total_ch4_dihemat,
@@ -161,6 +174,7 @@ def index():
                             tps=tps, # You still might need this for modal or other parts of the page
                             user=user,
                             artikel=artikel,
+                            unread_notifications=unread_notifications,
                             round=round,
                             page='home')
 
@@ -221,6 +235,21 @@ def reports():
         db.session.add(laporan)
         db.session.commit()
 
+        # --- Send notification to relevant officers ---
+        officers_in_area = Petugas.query.all() # Assuming area_tugas in Petugas corresponds to report location
+        for officer in officers_in_area:
+            notification = Notification(
+                recipient_id=officer.user_id,
+                sender_id=masyarakat.user_id,
+                message=f"Laporan baru dibuat oleh {masyarakat.nama_lengkap}",
+            )
+        db.session.add(notification)
+        db.session.commit()
+
+        # Emit SocketIO event (more on this later in JavaScript)
+        emit('new_report', {'message': 'Laporan baru tersedia!'}, room='officer_notifications', namespace='/')
+        # Emit notification event to the recipient's room 
+
         flash('Laporan berhasil dikirim!', 'success')
         return redirect(url_for('views.index'))
 
@@ -261,6 +290,22 @@ def history():
         laporan.tanggal_laporan = format_tanggal_locale(laporan.tanggal_laporan)
 
     return render_template('history.html', data_laporan=data_laporan, page='history')
+
+# todo ====================== NOTIFICATION SECTION ===========================
+@views.route('/notification/<string:notification_id>/mark_as_read', methods=['POST', 'GET'])
+@login_required
+def mark_notification_as_read(notification_id):
+    notification = Notification.query.get_or_404(notification_id)
+
+    if notification.recipient_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    
+    emit('new_notification', {'count': 1},  room=notification.recipient_id, namespace='/')
+
+    notification.is_read = True
+    db.session.commit()
+
+    return jsonify({'success': True})
 
 
 # todo ====================== PROFILE SECTION ======================

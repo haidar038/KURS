@@ -38,7 +38,7 @@
                             <td>{{ item.berat }}</td>
                             <td>
                                 <div class="d-flex justify-content-center align-items-center justify-content-lg-center">
-                                    <a href="#" class="btn btn-light fs-3" onclick="processReport('{{ item.latitude }}', '{{ item.longitude }}', '{{ item.id }}', '{{ item.status }}')">
+                                    <a href="#" class="btn btn-light fs-3" onclick="processReport('{{ item.latitude }}', '{{ item.longitude }}', '{{ item.id }}', '{{ item.status }}', '{{ item.foto }}')">
                                         <i class="fa fa-chevron-circle-right"></i>
                                     </a>
                                 </div>
@@ -117,10 +117,11 @@
                     </div>
                 </div>
                 <div class="mb-3">
-                    {% if foto_laporan %} {% for item in foto_laporan %}
-                    <img src="{{ url_for('officer.report_picture', id=item.id) }}" alt="Profile Picture" class="profile-picture rounded-circle object-fit-cover" height="132" width="132" />
-                    {% endfor %} {% else %}
-                    <img src="{{ url_for('static', filename='img/profile/default.png') }}" alt="Profile Picture" class="profile-picture" height="132" width="132" />
+                    <p class="fw-bold">Foto Sampah</p>
+                    {% if foto_laporan %}
+                    <img src="" alt="Profile Picture" class="img-fluid object-fit-cover w-100" id="fotoLaporan" />
+                    {% else %}
+                    <img src="{{ url_for('static', filename='img/trash_default.png') }}" alt="Profile Picture" class="img-fluid w-100" />
                     {% endif %}
                 </div>
                 <form id="tpsForm" method="POST">
@@ -147,15 +148,16 @@
     let map;
     let marker;
 
-    mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q';
+    mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseWxtanB4ZzBkOGIyaXM2NXpqNHltbTEifQ.3UzDa633gOXAJMYeAJZBvQ';
     map = new mapboxgl.Map({
         container: 'tps-detail-map',
         style: 'mapbox://styles/mapbox/streets-v11',
         center: [107.6096, -6.9175],
         zoom: 10,
+        interactive: false,
     });
 
-    function processReport(latitude, longitude, reportId, status) {
+    function processReport(latitude, longitude, reportId, status, fotoLaporan) {
         $('#tpsDetailModalLabel').text('Lokasi Sampah');
 
         // Hapus marker sebelumnya jika ada
@@ -185,8 +187,10 @@
         const buttonIcon = document.getElementById('buttonIcon');
         const tpsForm = document.getElementById('tpsForm');
         const reportIdInput = document.getElementById('reportId');
+        const foto = document.getElementById('fotoLaporan');
 
         reportIdInput.value = reportId;
+        foto.src = `${fotoLaporan}`;
 
         if (status === '1') {
             tpsForm.action = `{{ url_for('officer.confirm_report', id='') }}${reportId}`;

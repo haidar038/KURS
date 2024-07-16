@@ -10,15 +10,15 @@ class User(db.Model, UserMixin):
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_type = db.Column(db.String(20), nullable=False)
-    email = db.Column(db.String(255), nullable=False)
+    email = db.Column(db.String(255), nullable=False, unique=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     is_confirmed = db.Column(db.Boolean, nullable=False, default=False)
     confirmed_on = db.Column(db.DateTime, nullable=True)
 
-    masyarakat = db.relationship('Masyarakat', backref='user', uselist=False, lazy=True, cascade="all, delete-orphan")
-    petugas = db.relationship('Petugas', backref='user', uselist=False, lazy=True, cascade="all, delete-orphan")
-    app_admin = db.relationship('AppAdmin', backref='user', uselist=False, lazy=True, cascade="all, delete-orphan") 
+    # masyarakat = db.relationship('Masyarakat', backref='user', uselist=False, lazy=True, cascade="all, delete-orphan")
+    # petugas = db.relationship('Petugas', backref='user', uselist=False, lazy=True, cascade="all, delete-orphan")
+    # app_admin = db.relationship('AppAdmin', backref='user', uselist=False, lazy=True, cascade="all, delete-orphan") 
 
     # @hybrid_property
     # def password(self):
@@ -31,24 +31,12 @@ class User(db.Model, UserMixin):
     # def verify_password(self, password):
     #     return check_password_hash(self.password_hash, password)
 
-    def __repr__(self):
-        return f'<User {self.username}>'
-
-    def get_id(self):
-        return str(self.id)
-
 class AppAdmin(db.Model, UserMixin):
     __tablename__ = 'app_admin'
-
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey('user.id', ondelete='CASCADE'), unique=True, nullable=False)
-
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), primary_key=True, default=lambda: str(uuid.uuid4()))
     foto_profil = db.Column(db.String(255), nullable=True)
 
-    # user = db.relationship('User', backref=db.backref('admin', uselist=False))
-
-    def __repr__(self):
-        return f'<AppAdmin {self.id}>' 
+    user = db.relationship('User', backref=db.backref('admin', uselist=False))
 
     def get_id(self):
         return str(self.user_id)
@@ -56,20 +44,14 @@ class AppAdmin(db.Model, UserMixin):
 # Tabel untuk data Masyarakat
 class Masyarakat(db.Model, UserMixin):
     __tablename__ = 'masyarakat'
-    
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey('user.id', ondelete='CASCADE'), unique=True, nullable=False)
-
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), primary_key=True, default=lambda: str(uuid.uuid4()))
     nama_lengkap = db.Column(db.String(100), nullable=False)
     alamat = db.Column(db.Text, nullable=False)
     no_telepon = db.Column(db.String(20), nullable=False)
     foto_profil = db.Column(db.String(255), nullable=True)
     poin = db.Column(db.Integer, default=0) # Atribut baru untuk poin
 
-    # user = db.relationship('User', backref=db.backref('masyarakat', uselist=False))
-
-    def __repr__(self):
-        return f'<Masyarakat {self.nama_lengkap}>'
+    user = db.relationship('User', backref=db.backref('masyarakat', uselist=False))
 
     def get_id(self):
         return str(self.user_id)
@@ -81,20 +63,14 @@ class Masyarakat(db.Model, UserMixin):
 
 class Petugas(db.Model, UserMixin):
     __tablename__ = 'petugas'
-    
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = db.Column(db.String(36), db.ForeignKey('user.id', ondelete='CASCADE'), unique=True, nullable=False)
-
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), primary_key=True, default=lambda: str(uuid.uuid4()))
     nama_petugas = db.Column(db.String(100), nullable=False)
     area_tugas = db.Column(db.String(100), nullable=False)
     no_telepon = db.Column(db.String(20), nullable=False)
     foto_profil = db.Column(db.String(255), nullable=True)
     poin = db.Column(db.Integer, default=0)  # Tambahkan atribut poin
 
-    # user = db.relationship('User', backref=db.backref('petugas', uselist=False))
-
-    def __repr__(self):
-        return f'<Petugas {self.nama_petugas}>'
+    user = db.relationship('User', backref=db.backref('petugas', uselist=False))
 
     def get_id(self):
         return str(self.user_id)
@@ -125,17 +101,29 @@ class TPS(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     nama = db.Column(db.String(100), nullable=False)
     alamat = db.Column(db.Text, nullable=True)  # Opsional: Jika ingin menyimpan alamat lengkap
+    foto = db.Column(db.String(255), nullable=True)
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
     jenis_sampah = db.Column(db.String(255), nullable=True)  # Contoh: 'Organik, Anorganik'
-    jam_operasional_start = db.Column(db.String(100), nullable=True)  # Contoh: '08:00 - 17:00'
-    jam_operasional_end = db.Column(db.String(100), nullable=True)  # Contoh: '08:00 - 17:00'
+    # jam_operasional_start = db.Column(db.String(100), nullable=True)  # Contoh: '08:00 - 17:00'
+    # jam_operasional_end = db.Column(db.String(100), nullable=True)  # Contoh: '08:00 - 17:00'
 
 class Artikel(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     thumbnail = db.Column(db.String(255), nullable=True)
     judul = db.Column(db.String(255), nullable=False)
     konten = db.Column(db.Text(), nullable=False)
+
+class Notification(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    recipient_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)  # Who is the notification for?
+    sender_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=True)     # Who sent it?
+    message = db.Column(db.String(255), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.now())
+    is_read = db.Column(db.Boolean, default=False)  # Mark as read or unread
+
+    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='notifications_received')
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='notifications_sent')
 
 # === Model Baru untuk Faktor Emisi CO2 ===
 class FaktorEmisiCO2(db.Model):

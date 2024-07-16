@@ -1,0 +1,20 @@
+{% extends 'auth_base.html' %}
+<!-- BLOCKS -->
+{% block content %}
+<div class="container h-100">
+    <div class="row h-100">
+        <div class="col h-100 d-flex align-items-center">
+            <div class="card card-body text-bg-light text-center">
+                <h5>Kirim ulang email konfirmasi!</h5>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email:</label>
+                        <input type="email" class="form-control" id="email" name="email" required />
+                    </div>
+                    <button class="btn btn-success" type="submit">Resend Confirmation</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

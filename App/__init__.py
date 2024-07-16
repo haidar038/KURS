@@ -7,15 +7,44 @@ from werkzeug.security import generate_password_hash
 from flask_toastr import Toastr
 from flask_migrate import Migrate
 from flask_ckeditor import CKEditor
+from flask_mail import Mail
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
+from datetime import datetime
+from sqlalchemy import create_engine
 
 load_dotenv()
+
+# Use a default port if MYSQLPORT is not set
+mysql_port = os.environ.get("MYSQLPORT", "3306")
+
+mysql_uri = (f'mysql+pymysql://{os.environ.get("MYSQLUSER")}:'
+        f'{os.environ.get("MYSQLPASSWORD")}@'
+        f'{os.environ.get("MYSQLHOST")}:'
+        f'{mysql_port}/'
+        f'{os.environ.get("MYSQLDATABASE")}')
 
 socketio = SocketIO(cors_allowed_origins="*")
 db = SQLAlchemy()
 ckeditor = CKEditor()
 login_manager = LoginManager()
 toastr = Toastr()
+mail = Mail()
+migrate = Migrate()
+
+# Create engine only if all necessary environment variables are set
+if all([os.environ.get("MYSQLUSER"), os.environ.get("MYSQLPASSWORD"),
+        os.environ.get("MYSQLHOST"), os.environ.get("MYSQLDATABASE")]):
+    engine = create_engine(mysql_uri)
+    limiter = Limiter(
+        key_func=get_remote_address,
+        storage_uri=f"mysql://{mysql_uri}",
+        storage_options={"engine": engine}
+    )
+else:
+    print("Warning: MySQL environment variables are not fully set. Limiter will use in-memory storage.")
+    limiter = Limiter(key_func=get_remote_address)
 
 def create_app():
     app = Flask(__name__)
@@ -24,25 +53,32 @@ def create_app():
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Pastikan folder ada
 
     app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "kursampah")  # Gunakan variabel environment atau nilai default
-    app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f'mysql+pymysql://{os.environ.get("MYSQLUSER")}:'
-        f'{os.environ.get("MYSQLPASSWORD")}@'
-        f'{os.environ.get("MYSQLHOST")}:'
-        f'{os.environ.get("MYSQLPORT")}/'
-        f'{os.environ.get("MYSQLDATABASE")}'
-    )
+    app.config['SQLALCHEMY_DATABASE_URI'] = mysql_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['CKEDITOR_PKG_TYPE'] = 'basic'
     app.config['CKEDITOR_ENABLE_CSRF'] = True
     app.config['CKEDITOR_SERVE_LOCAL'] = True
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER  # Konfigurasi folder upload
 
+    # EMAIL CONFIRMATION
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER')
+    app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_DEFAULT_SENDER')
+
+    print(f"Email User: {os.environ.get('EMAIL_USER')}")
+    print(f"Email Pass: {os.environ.get('EMAIL_PASS')}")
+
     db.init_app(app)
     socketio.init_app(app)
     login_manager.init_app(app)
     ckeditor.init_app(app)
     toastr.init_app(app)
-    migrate = Migrate(app, db)
+    mail.init_app(app)
+    migrate.init_app(app, db)
+    limiter.init_app(app)
 
     from .Authentication.routes import auth
     from .Officer.routes import officer
@@ -67,7 +103,9 @@ def create_app():
                     user_type='admin',
                     username='admin',
                     email='admin@gmail.com',
-                    password_hash=generate_password_hash('admkurs123', method='pbkdf2')
+                    password_hash=generate_password_hash('admkurs123', method='pbkdf2'),
+                    is_confirmed = True,
+                    confirmed_on = datetime.now()
                 )
                 db.session.add(new_user) 
                 db.session.flush()  

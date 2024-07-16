@@ -8,7 +8,9 @@
             <h1 class="fw-bold text-center mb-3">Tulis Artikel</h1>
             <div class="card card-body rounded-4 shadow">
                 {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
-                <div class="alert d-flex justify-content-between alert-{{ category }}" role="alert">{{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>
+                <div class="alert d-flex justify-content-between alert-dismissable fade show mb-3 alert-{{ category }}" role="alert">
+                    {{ message }} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
                 {% endfor %} {% endif %} {% endwith %}
                 <table class="table">
                     <thead>

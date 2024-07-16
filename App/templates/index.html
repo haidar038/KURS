@@ -34,10 +34,10 @@
             </div>
             {% endfor %} {% endif %} {% endwith %}
             <hr />
-            <p class="fw-bold h5">Lokasi TPS Terdekat</p>
+            <p class="fw-bold h5 text-success text-center">Lokasi TPS Terdekat</p>
             <div id="tps-list"></div>
             <hr />
-            <p class="fw-bold h5">Artikel</p>
+            <p class="fw-bold h5 text-success text-center">Artikel</p>
             <div id="articleCarousel" class="carousel slide">
                 <div class="carousel-inner">
                     <div class="carousel-item active">
@@ -94,6 +94,9 @@
                                 <div id="map-wrapper-inner">
                                     <div id="tps-detail-map"></div>
                                 </div>
+                            </div>
+                            <div class="mt-2">
+                                <button id="toggleMapMode" class="btn btn-success btn-sm">Ubah Mode</button>
                             </div>
                         </div>
                     </div>

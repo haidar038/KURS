@@ -1,15 +1,22 @@
 from flask import Blueprint, render_template, send_file, request, redirect, flash, url_for, current_app, session
+from flask_mail import Message
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
+from flask_socketio import emit
 from flask_login import current_user, login_user, logout_user, login_required
+from datetime import datetime
 
 # Import other necessary modules and models
-from App.models import User, Masyarakat, Petugas, AppAdmin
-from App import db, login_manager
+from App.models import User, Masyarakat, Petugas, Notification
+from App.utils import confirm_token, generate_confirmation_token
+from App import db, login_manager, mail, limiter
 
-import random, string
+import random, string, logging
 
 auth = Blueprint('auth', __name__)
+
+# At the top of your routes.py file
+logger = logging.getLogger(__name__)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -21,7 +28,22 @@ def generate_username(email):
     random_digits = ''.join(random.choice(string.digits) for _ in range(4))
     return f"{username_base}{random_digits}"
 
+def send_confirmation_email(user_email):
+    try:
+        token = generate_confirmation_token(user_email)
+        confirm_url = url_for('auth.confirm_email', token=token, _external=True)
+        html = render_template('auth/activate.html', confirm_url=confirm_url)
+        subject = "Silakan konfirmasi email anda"
+        msg = Message(subject, recipients=[user_email], html=html)
+        current_app.logger.info(f"Mencoba mengirim email ke {user_email}")
+        mail.send(msg)
+        current_app.logger.info(f"Email berhasil dikirim ke {user_email}")
+    except Exception as e:
+        current_app.logger.error(f"Kesalahan pengiriman email: {str(e)}")
+        raise
+
 @auth.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
     """Handles user login."""
     if current_user.is_authenticated:
@@ -29,6 +51,7 @@ def login():
 
     if request.method == 'POST':
         email = request.form['email']
+        logger.info(f"Login attempt for email: {email}")
         password = request.form['password']
 
         # Cari user berdasarkan email di tabel Masyarakat dan Petugas
@@ -41,13 +64,16 @@ def login():
             elif user.user_type == 'petugas':
                 user_data = user.petugas
             elif user.user_type == 'admin':
-                user_data = user.app_admin
+                user_data = user.admin
             else:
                 flash("Tipe akun tidak valid.", category='danger')
                 return redirect(url_for('auth.login', email=email))
 
             # Gunakan user_data.password_hash untuk verifikasi password
             if check_password_hash(user.password_hash, password): 
+                if not user.is_confirmed:
+                    flash('Harap konfirmasikan akun Anda sebelum login.', 'warning')
+                    return redirect(url_for('auth.login', email=email))
                 if user.user_type == 'masyarakat':
                     login_user(user_data, remember=True)
                     session['account_type'] = user.user_type 
@@ -74,6 +100,7 @@ def login():
 
 # User Registration Route
 @auth.route('/register', methods=['GET', 'POST'])
+@limiter.limit("3 per hour")
 def register():
     """Handles user registration."""
     if current_user.is_authenticated:
@@ -81,8 +108,15 @@ def register():
 
     if request.method == 'POST':
         email = request.form['email_address']
+        logger.info(f"Attempt to register with email: {email}")
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+
+        # Check if email already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('Email sudah terdaftar. Silakan gunakan email lain.', category='danger')
+            return render_template('auth/register.html', page='register')
 
         # Generate username
         username = generate_username(email)
@@ -115,8 +149,12 @@ def register():
                 db.session.add(new_user_data)
                 db.session.commit()
 
-                flash('Anda berhasil bergabung, silakan login', 'success')
-                return redirect(url_for('auth.login', email=email))
+                # Send confirmation email
+                send_confirmation_email(email)
+
+                # flash('A confirmation email has been sent to your email address. Please check your inbox.', 'info')
+                flash('Email konfirmasi telah dikirimkan ke email anda. Silakan cek kotak masuk.', 'info')
+                return redirect(url_for('auth.login'))
 
             except Exception as e:
                 db.session.rollback()
@@ -124,6 +162,67 @@ def register():
                 print(f"Error during registration: {e}")
 
     return render_template('auth/register.html', page='register')
+
+@auth.route('/email_template')
+def email_template():
+    return render_template('auth/email_template.html', page='email_template')
+
+@auth.route('/confirm/<token>')
+def confirm_email(token):
+    logger.info(f"Email confirmation attempt with token: {token[:10]}...")
+    try:
+        email = confirm_token(token)
+    except:
+        flash('Link konfirmasi tidak valid atau telah kedaluwarsa.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    user = User.query.filter_by(email=email).first_or_404()
+    if user.is_confirmed:
+        flash('Akun sudah dikonfirmasi. Silakan login.', 'success')
+    else:
+        user.is_confirmed = True
+        user.confirmed_on = datetime.now()
+        db.session.add(user)
+        db.session.commit()
+
+        # --- Send notification to Admin --- 
+        admin = User.query.filter_by(user_type='admin').first()  # Get the admin user
+        if admin:
+            notification = Notification(
+                recipient_id=admin.id,
+                message=f"User {user.username} ({user.email}) has confirmed their account!"
+            )
+            db.session.add(notification)
+            db.session.commit()
+
+            # --- Emit SocketIO event to the admin  ---
+            emit('new_user_confirmed', {'message': notification.message}, room=admin.id, namespace='/')
+        flash('Anda telah mengonfirmasi akun Anda. Terima kasih!', 'success')
+    return redirect(url_for('auth.login'))
+
+@auth.route('/resend')
+@limiter.limit("3 per hour")
+def resend_confirmation():
+    if current_user.is_authenticated:
+        return redirect(url_for('views.index'))
+
+    return render_template('auth/resend_confirmation.html')
+
+@auth.route('/resend', methods=['POST'])
+def resend_confirmation_post():
+    email = request.form['email']
+    user = User.query.filter_by(email=email).first()
+
+    if user:
+        if user.is_confirmed:
+            flash('Akun sudah dikonfirmasi. Silakan login.', 'info')
+        else:
+            send_confirmation_email(user.email)
+            flash('Email konfirmasi baru telah dikirim.', 'success')
+    else:
+        flash('Tidak ditemukan akun dengan alamat email tersebut.', 'danger')
+
+    return redirect(url_for('auth.login'))
 
 #todo ================================== OFFICER SECTION ==================================
 
@@ -137,6 +236,12 @@ def register_officer():
         email = request.form['email_address']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+
+        # Check if email already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            flash('Email sudah terdaftar. Silakan gunakan email lain.', category='danger')
+            return render_template('auth/officer_register.html', page='register')
 
         # Generate username
         username = generate_username(email)
@@ -169,8 +274,12 @@ def register_officer():
                 db.session.add(new_user_data)
                 db.session.commit()
 
-                flash('Anda berhasil bergabung, silakan login', 'success')
-                return redirect(url_for('auth.login', email=email))
+                # Send confirmation email
+                send_confirmation_email(email)
+
+                # flash('A confirmation email has been sent to your email address. Please check your inbox.', 'info')
+                flash('Email konfirmasi telah dikirimkan ke email anda. Silakan cek kotak masuk.', 'info')
+                return redirect(url_for('auth.login'))
 
             except Exception as e:
                 db.session.rollback()

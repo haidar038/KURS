@@ -1,14 +1,16 @@
 import os
 
 from collections import defaultdict
-from flask import request, redirect, render_template, Blueprint, flash, url_for, current_app, send_from_directory, jsonify
+from flask import request, redirect, render_template, Blueprint, flash, url_for, current_app, send_from_directory, jsonify, g
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import func
+from flask_socketio import emit
 from flask_login import login_required, current_user
 
-from App.models import TPS, Artikel, Laporan, Petugas, Masyarakat, User, AppAdmin, FaktorEmisiCO2
+from App.models import TPS, Artikel, Laporan, Petugas, Masyarakat, User, AppAdmin, FaktorEmisiCO2, Notification
+from App.utils import get_user_notification_room, get_unread_notifications
 from App import db
 
 app_admin = Blueprint('app_admin', __name__)
@@ -44,6 +46,14 @@ def hitung_co2_dihemat(jenis_sampah, berat_sampah):
         print(f"Error database: {e}")
         flash(f"Terjadi kesalahan saat menghitung emisi CO2. Silahkan coba lagi.", category='danger')
         return 0.0
+    
+@app_admin.context_processor
+def inject_unread_notifications():
+  if current_user.is_authenticated:
+    unread_notifications = get_unread_notifications()
+  else:
+    unread_notifications = []
+  return dict(unread_notifications=unread_notifications)
 
 @app_admin.route('/admin_page')
 @login_required
@@ -53,6 +63,10 @@ def index():
     sampah = Laporan.query.filter_by(status='3').all()
     tps = TPS.query.all()
     artikel = Artikel.query.all()
+
+    # Emit joined_room event for AppAdmin
+    room = get_user_notification_room(current_user.id)
+    emit('joined_room', {'room': room}, room=room, namespace='/')
 
     data_sampah = defaultdict(float)
     for laporan in sampah:
@@ -70,7 +84,41 @@ def index():
     elif user_type.user_type == 'petugas':
         return redirect(url_for('officer.index'))
 
-    return render_template('admin_page/index.html', round=round, user=user, total_vol_sampah=total_vol_sampah, total_co2_dihemat=total_co2_dihemat, officer=officer, sampah=sampah, tps=tps, artikel=artikel, page='home')
+    return render_template(
+        'admin_page/index.html',
+        round=round,
+        user=user,
+        total_vol_sampah=total_vol_sampah,
+        total_co2_dihemat=total_co2_dihemat,
+        unread_notifications=get_unread_notifications(),
+        officer=officer,
+        sampah=sampah,
+        tps=tps, 
+        artikel=artikel,
+        page='home')
+
+@app_admin.route('/admin_page/stats', methods=['GET', 'POST'])
+@login_required
+def stats():
+    # FOR REPORT CHART
+
+    laporan_selesai = (
+        Laporan.query.filter_by(status='3')
+        .group_by(func.date(Laporan.tanggal_laporan))
+        .order_by(func.date(Laporan.tanggal_laporan))
+        .values(func.date(Laporan.tanggal_laporan), func.count(Laporan.id))
+    )
+
+    laporan_per_hari = {}
+    for tanggal, jumlah in laporan_selesai:
+        tanggal_str = tanggal.strftime('%Y-%m-%d')
+        laporan_per_hari[tanggal_str] = jumlah
+
+    return render_template(
+        'admin_page/stats.html',
+        page='stats',
+        laporan_per_hari=laporan_per_hari
+        )
 
 @app_admin.route('/admin_page/tps', methods=['GET','POST'])
 @login_required
@@ -85,17 +133,26 @@ def tps():
 
     nama = request.form.get('nama_tps')
     alamat = request.form.get('alamat')
+    foto = request.files.get('foto')
     lat = request.form.get('latitude')
     long = request.form.get('longitude')
     jenis = request.form.get('jenis_sampah')
-    open_time = request.form.get('jam_operasional_start')
-    close_time = request.form.get('jam_operasional_end')
+    # open_time = request.form.get('jam_operasional_start')
+    # close_time = request.form.get('jam_operasional_end')
 
     if request.method == 'POST':
-        add_tps = TPS(nama=nama, alamat=alamat, latitude=lat, longitude=long, jenis_sampah=jenis, jam_operasional_start=open_time, jam_operasional_end=close_time)
+        if foto and picture_allowed_file(foto.filename):
+            filename = secure_filename(foto.filename)
+            foto_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            foto.save(foto_path)
+            foto_db_path = '/static/uploads/' + filename # Simpan path ke database
+        else:
+            foto_db_path = None  # Tidak ada foto
+
+        add_tps = TPS(nama=nama, alamat=alamat, latitude=lat, longitude=long, jenis_sampah=jenis, foto=foto_db_path)
         db.session.add(add_tps)
         db.session.commit()
-        flash('Berhasil Tambah Data TPS', 'success')
+        flash('Berhasil Menambahkan Data TPS', 'success')
         print('Berhasil Tambah Data TPS')
         redirect(url_for('app_admin.tps'))
 
@@ -104,7 +161,7 @@ def tps():
             TPS,
             func.sum(Laporan.berat).label('total_sampah')
         )
-        .outerjoin(Laporan, Laporan.tps_id == TPS.id)  
+        .outerjoin(Laporan, Laporan.tps_id == TPS.id)
         .group_by(TPS.id) 
         .all()
     )
@@ -117,6 +174,39 @@ def tps():
     tps_pagination = TPS.query.paginate(page=page, per_page=pagination_pages)
 
     return render_template('admin_page/tps.html', page='add_tps', min=min, max=max, tps=tps, data_tps=data_tps, tps_pagination=tps_pagination)
+
+@app_admin.route('/admin_page/update_tps/<string:id>', methods=['POST','GET'])
+def update_tps(id):
+    tps = TPS.query.get_or_404(id)
+    
+    nama = request.form['nama_tps_update']
+    alamat = request.form['alamat_update']
+    foto = request.files.get('foto_update')
+    latitude = request.form['latitude_update']
+    longitude = request.form['longitude_update']
+    jenis_sampah = request.form['jenis_sampah_update']
+
+    if request.method == 'POST':
+        tps.nama = nama
+        tps.alamat = alamat
+        tps.latitude = latitude
+        tps.longitude = longitude
+        tps.jenis_sampah = jenis_sampah
+
+        if foto and picture_allowed_file(foto.filename):
+            filename = secure_filename(foto.filename)
+            foto_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
+            foto.save(foto_path)
+            foto_db_path = '/static/uploads/' + filename # Simpan path ke database
+            tps.foto = foto_db_path
+        else:
+            foto_db_path = None  # Tidak ada foto
+        
+        db.session.commit()
+
+        flash(f'Data TPS {tps.nama} berhasil diperbarui!', 'success')
+        print('Berhasil Perbarui Data TPS')
+        return redirect(url_for('app_admin.tps'))
 
 @app_admin.route('/admin_page/delete_tps/<string:id>', methods=['POST','GET'])
 def delete_tps(id):
@@ -156,6 +246,20 @@ def posts():
         db.session.add(add_post)
         db.session.commit()
 
+        # Send notification to all users 
+        # You might want to refine this to target specific user segments
+        for user in User.query.all():  
+            notification = Notification(
+                recipient_id=user.id,
+                sender_id=current_user.id,
+                message="Artikel baru telah diposting!" 
+            )
+            db.session.add(notification)
+        db.session.commit() 
+
+        # Emit SocketIO event to all users (or adjust the room as needed)
+        emit('new_article', {'message': 'Artikel baru tersedia!'}, room='all_users', namespace='/') 
+
         flash('Berhasil membuat artikel!', 'success')
         return redirect(url_for('app_admin.posts'))
 
@@ -182,6 +286,22 @@ def delete_post(id):
     db.session.commit()
     flash(f'Postingan dengan judul {post.judul} dihapus!', 'danger')
     return redirect(url_for('app_admin.posts'))
+
+
+# todo ====================== NOTIFICATION SECTION ===========================
+
+@app_admin.route('/notification/<string:notification_id>/mark_as_read', methods=['POST', 'GET'])
+@login_required
+def mark_notification_as_read(notification_id):
+    notification = Notification.query.get_or_404(notification_id)
+
+    if notification.recipient_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+    notification.is_read = True
+    db.session.commit()
+
+    return redirect(url_for('app_admin.index'))
 
 
 # todo ================================ PROFILE SECTION ==============================
@@ -269,8 +389,6 @@ def update_email(id):
     
 @app_admin.route('/admin_page/profile/<string:id>/update_password', methods=['GET', 'POST'])
 def update_password(id):
-    user = AppAdmin.query.get_or_404(id)
-
     if request.method == 'POST':
         old_password = request.form.get('old_password')
         new_password = request.form.get('new_password')

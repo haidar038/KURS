@@ -39,6 +39,7 @@
         ></script>
         <script src="https://cdn.jsdelivr.net/npm/ol@v9.2.4/dist/ol.js"></script>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v9.2.4/ol.css" />
+        <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
     </head>
     <body>
         <head>
@@ -50,9 +51,23 @@
                     <div class="dropdown">
                         <button class="btn d-block d-lg-none d-flex align-items-center p-1 rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <ion-icon name="notifications" class="fs-1"></ion-icon>
+                            {% if unread_notifications|length > 0 %}
+                            <span class="position-absolute top-100 start-0 translate-middle badge rounded-pill bg-danger">
+                                {{ unread_notifications|length }}
+                                <span class="visually-hidden">unread notifications</span>
+                            </span>
+                            {% endif %}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            {% for notification in unread_notifications %}
+                            <li>
+                                <a class="dropdown-item text-break text-truncate text-wrap" style="width: 20rem" href="/notification/{{ notification.id }}/mark_as_read" data-notification-id="{{ notification.id }}">
+                                    {{ notification.message }}
+                                </a>
+                            </li>
+                            {% endfor %} {% if unread_notifications|length == 0 %}
+                            <li><a class="dropdown-item text-muted" href="#">Belum ada notifikasi</a></li>
+                            {% endif %}
                         </ul>
                     </div>
                     <a class="navbar-brand fw-bold d-none d-lg-block" href="#"><img id="brandLogo" src="{{ url_for('static', filename='img/KURS_WHITE.svg' ) }}" alt="Logo" height="30" /></a>
@@ -101,9 +116,9 @@
                 </li>
                 <li class="nav-item flex-fill" role="presentation">
                     <a
-                        href="{{ url_for('app_admin.index' ) }}"
-                        class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page_name == 'reports' %} active {% endif %}"
-                        id="wiki-tab"
+                        href="{{ url_for('app_admin.stats') }}"
+                        class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'stats' %} active {% endif %}"
+                        id="stats-tab"
                         type="button"
                         role="tab"
                         aria-selected="false"
@@ -116,7 +131,7 @@
                     <a
                         href="{{ url_for('app_admin.posts' ) }}"
                         class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page_name == 'articles' %} active {% endif %}"
-                        id="history-tab"
+                        id="articles-tab"
                         type="button"
                         role="tab"
                         aria-selected="false"
@@ -129,7 +144,7 @@
                     <a
                         href="{{ url_for('app_admin.tps' ) }}"
                         class="nav-link rounded-0 d-flex justify-content-center flex-column justify-content-center align-items-center {% if page == 'add_tps' %} active {% endif %}"
-                        id="history-tab"
+                        id="tps-tab"
                         type="button"
                         role="tab"
                         aria-selected="false"
@@ -171,6 +186,121 @@
                     );
                 });
             }
+        </script>
+
+        <!-- SOCKETIO -->
+        <script>
+            let socket;
+            let notificationCount = 0; // Initialize notification count
+
+            // Function to initialize SocketIO connection
+            function initializeSocketIO() {
+                socket = io();
+
+                socket.on('connect', () => {
+                    console.log('Connected to SocketIO server');
+                    if (isUserLoggedIn()) {
+                        // Replace with your login check function
+                        joinNotificationRoom();
+                    }
+                });
+
+                socket.on('joined_room', (data) => {
+                    console.log('Joined notification room:', data.room);
+                });
+
+                socket.on('new_notification', (data) => {
+                    console.log('New notification:', data.message);
+                    handleNewNotification(data.message);
+                    notificationCount++;
+                    updateNotificationBadge();
+                });
+
+                // ... Other event handlers (new_report, new_article, etc.) ...
+
+                // Handle disconnect
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from SocketIO server');
+                    // Optional: If you want to reconnect automatically
+                    // setTimeout(initializeSocketIO, 3000); // Retry in 3 seconds
+                });
+            }
+
+            // Function to join the user's notification room
+            function joinNotificationRoom() {
+                socket.emit('join_notification_room');
+            }
+
+            // Function to handle incoming notifications
+            function handleNewNotification(message) {
+                // Display the notification to the user
+                toastr.info(message, 'New Notification');
+                // ... Other logic (add to dropdown, etc.) ...
+            }
+
+            // Function to update the notification badge
+            function updateNotificationBadge() {
+                const badgeElement = document.getElementById('notification-badge');
+                if (badgeElement) {
+                    badgeElement.textContent = notificationCount;
+                    badgeElement.style.display = notificationCount > 0 ? 'inline-block' : 'none';
+                }
+            }
+
+            // Function to handle logout
+            function logout() {
+                // ... Your logout logic ...
+                socket.disconnect();
+            }
+
+            function isUserLoggedIn() {
+                // Replace with your actual login check logic
+                // Example using Flask-Login:
+                return '{{ current_user.is_authenticated }}'.toLowerCase() === 'true';
+            }
+
+            // Initialize SocketIO on page load
+            window.addEventListener('load', initializeSocketIO);
+        </script>
+        <script>
+            $(document).ready(function () {
+                $('.dropdown-item').click(function (event) {
+                    event.preventDefault(); // Prevent the link from navigating
+
+                    const notificationId = $(this).data('notification-id');
+                    const dropdown = $(this).closest('.dropdown'); // Get the closest parent dropdown
+
+                    $.ajax({
+                        url: `/notification/${notificationId}/mark_as_read`,
+                        type: 'POST',
+                        success: function (response) {
+                            if (response.success) {
+                                $(this).parent('li').remove(); // Remove notification from dropdown
+
+                                // Update notification badge
+                                const countElement = $('#notification-badge');
+                                let currentCount = parseInt(countElement.text());
+                                let newCount = currentCount - 1;
+                                countElement.text(newCount);
+
+                                if (newCount <= 0) {
+                                    countElement.remove();
+                                }
+
+                                // Manually close the dropdown using Bootstrap's JS
+                                dropdown.dropdown('hide'); // Requires Bootstrap's JavaScript
+                            } else {
+                                // Handle AJAX error...
+                            }
+                        }.bind(this), // Bind 'this' to maintain context
+                        error: function (error) {
+                            // Handle AJAX error...
+                        },
+                    });
+                });
+
+                // ... (rest of your JavaScript) ...
+            });
         </script>
 
         <!-- TEXT TRUNCATE -->

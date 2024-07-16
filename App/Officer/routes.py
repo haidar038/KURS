@@ -1,11 +1,13 @@
-from flask import Blueprint, render_template, send_from_directory, request, redirect, flash, url_for, current_app, jsonify
+from flask import Blueprint, render_template, send_from_directory, request, redirect, flash, url_for, current_app, jsonify, g
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import func
+from flask_socketio import emit
 from flask_login import current_user, login_required
 from babel.dates import format_datetime
 # Import other necessary modules and models
-from App.models import TPS, Artikel, Laporan, Petugas, User
+from App.models import TPS, Artikel, Laporan, Petugas, User, Notification
+from App.utils import get_user_notification_room, get_unread_notifications
 from App import db
 
 import pytz, os, json
@@ -39,6 +41,14 @@ def format_tanggal_locale(tanggal, locale='en'):
     # Tambahkan informasi zona waktu WIT
     return f"{formatted_date} WIT"
 
+@officer.context_processor
+def inject_unread_notifications():
+  if current_user.is_authenticated:
+    unread_notifications = get_unread_notifications()
+  else:
+    unread_notifications = []
+  return dict(unread_notifications=unread_notifications)
+
 @officer.route('/officer_dashboard')
 @login_required
 def index():
@@ -47,6 +57,10 @@ def index():
         return redirect(url_for('views.index'))
     elif user_type.user_type == 'admin':
         return redirect(url_for('app_admin.index'))
+    
+     # Emit joined_room event for Petugas (Officer) 
+    room = get_user_notification_room(current_user.id)
+    emit('joined_room', {'room': room}, room=room, namespace='/')
 
     # Get data for chart
     new_reports = Laporan.query.filter_by(status='1').count()
@@ -83,6 +97,7 @@ def index():
         long_tps=json.dumps(long_tps), 
         tps=tps, 
         artikel=artikel, 
+        unread_notifications=get_unread_notifications(),
         page='officer_home'
     )
 
@@ -127,12 +142,22 @@ def confirm_report(id):
     # Ambil tps_id dari form data
     tps_id = request.form.get('pilihTPS')
 
-    print(tps_id)
     if tps_id:
         laporan.tps_id = tps_id
         laporan.petugas_id = current_user.id
         laporan.status = '2'
+        # Send notification to the user (Masyarakat)
+        notification = Notification(
+            recipient_id=laporan.masyarakat_id,
+            sender_id=current_user.id,
+            message=f"Laporan Anda sedang diproses oleh {current_user.username}"
+        )
+        db.session.add(notification)
         db.session.commit()
+
+        # Send notification to the user (Petugas)
+        
+        
         flash('Laporan berhasil dikonfirmasi!', 'info')
     else:
         flash('Gagal mengonfirmasi laporan: TPS tidak valid!', 'error')
@@ -154,6 +179,17 @@ def finish_report(id):
 
     laporan.status = '3'
     db.session.commit()
+    # Send notification to the user (Masyarakat)
+    notification = Notification(
+        recipient_id=laporan.masyarakat_id, 
+        sender_id=current_user.id,
+        message=f"Laporan Anda telah selesai dan tiba di {laporan.tps.nama}"  # Include TPS name 
+    )
+    db.session.add(notification)
+    db.session.commit()
+
+    # Emit SocketIO event to the specific user
+    emit('report_update', {'message': 'Laporan telah selesai!'}, room=laporan.masyarakat_id, namespace='/')
     flash('Laporan berhasil diselesaikan!', 'info')
     return redirect(url_for('officer.reports_list'))
 
@@ -177,6 +213,23 @@ def riwayat_laporan():
             laporan.tps = TPS.query.get(laporan.tps_id)
 
     return render_template('officer_page/riwayat.html', data_laporan=data_laporan, page=page, per_page=per_page, page_name='riwayat')
+
+
+# todo ====================== NOTIFICATION SECTION ===========================
+
+@officer.route('/notification/<string:notification_id>/mark_as_read', methods=['POST', 'GET'])
+@login_required
+def mark_notification_as_read(notification_id):
+    notification = Notification.query.get_or_404(notification_id)
+
+    if notification.recipient_id != current_user.id:
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+    notification.is_read = True
+    db.session.commit()
+
+    return jsonify({'success': True})
+
 
 # todo ================================ PROFILE SECTION ==============================
 @officer.route('/officer_dashboard/officer_profile/<string:id>', methods=['GET', 'POST'])

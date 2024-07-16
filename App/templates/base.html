@@ -38,20 +38,44 @@
         ></script>
         <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.0/mapbox-gl-directions.js"></script>
         <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.0/mapbox-gl-directions.css" type="text/css" />
+        <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
     </head>
     <body>
         <head>
             <nav class="navbar navbar-expand-lg navbar-dark bg-success">
                 <div class="container">
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <button
+                        class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-auto-close="outside"
+                        data-bs-target="#navbarSupportedContent"
+                        aria-controls="navbarSupportedContent"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation"
+                    >
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <div class="dropdown">
                         <button class="btn d-block d-lg-none d-flex align-items-center p-1 rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <ion-icon name="notifications" class="fs-1"></ion-icon>
+                            {% if unread_notifications|length > 0 %}
+                            <span class="position-absolute top-100 start-0 translate-middle badge rounded-pill bg-danger">
+                                {{ unread_notifications|length }}
+                                <span class="visually-hidden">unread notifications</span>
+                            </span>
+                            {% endif %}
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            {% for notification in unread_notifications %}
+                            <li>
+                                <a class="dropdown-item text-break text-truncate text-wrap" style="width: 20rem" href="/notification/{{ notification.id }}/mark_as_read" data-notification-id="{{ notification.id }}">
+                                    {{ notification.message }}
+                                </a>
+                            </li>
+                            {% endfor %} {% if unread_notifications|length == 0 %}
+                            <li><a class="dropdown-item text-muted" href="#">Belum ada notifikasi</a></li>
+                            {% endif %}
                         </ul>
                     </div>
                     <a class="navbar-brand fw-bold d-none d-lg-block" href="#"><img id="brandLogo" src="{{ url_for('static', filename='img/KURS_WHITE.svg' ) }}" alt="Logo" height="30" /></a>
@@ -83,8 +107,8 @@
             </nav>
         </head>
 
-        <main style="padding-bottom: 65px" class="{% if page == 'add_tps' %} pb-2 {% endif %}">
-            <ul class="nav nav-tabs w-100 bottom-0 bg-success navbar-dark d-flex d-lg-none {% if page == 'add_tps' %} d-none {% endif %}" id="navTab" role="tablist">
+        <main style="padding-bottom: 80px" class="{% if page == 'add_tps' %} pb-2 {% endif %}">
+            <ul class="nav nav-tabs w-100 bottom-0 bg-success navbar-dark d-flex flex-nowrap d-lg-none {% if page == 'add_tps' %} d-none {% endif %}" id="navTab" role="tablist">
                 <li class="nav-item flex-fill" role="presentation">
                     <a
                         href="{{ url_for('views.index' ) }}"
@@ -134,7 +158,7 @@
                         aria-selected="false"
                     >
                         <ion-icon name="time"></ion-icon>
-                        <small>List</small>
+                        <small>History</small>
                     </a>
                 </li>
                 <li class="nav-item flex-fill" role="presentation">
@@ -187,11 +211,173 @@
             });
         </script>
 
+        <!-- SOCKETIO -->
+        <script>
+            let socket;
+            let notificationCount = 0; // Initialize notification count
+
+            // Function to initialize SocketIO connection
+            function initializeSocketIO() {
+                socket = io();
+
+                socket.on('connect', () => {
+                    console.log('Connected to SocketIO server');
+                    if (isUserLoggedIn()) {
+                        // Replace with your login check function
+                        joinNotificationRoom();
+                    }
+                });
+
+                socket.on('joined_room', (data) => {
+                    console.log('Joined notification room:', data.room);
+                });
+
+                socket.on('new_notification', (data) => {
+                    console.log('New notification:', data.message);
+                    handleNewNotification(data.message);
+                    notificationCount++;
+                    updateNotificationBadge();
+                });
+
+                // ... Other event handlers (new_report, new_article, etc.) ...
+
+                // Handle disconnect
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from SocketIO server');
+                    // Optional: If you want to reconnect automatically
+                    // setTimeout(initializeSocketIO, 3000); // Retry in 3 seconds
+                });
+            }
+
+            // Function to join the user's notification room
+            function joinNotificationRoom() {
+                socket.emit('join_notification_room');
+            }
+
+            // Function to handle incoming notifications
+            function handleNewNotification(message) {
+                // Display the notification to the user
+                toastr.info(message, 'New Notification');
+                // ... Other logic (add to dropdown, etc.) ...
+            }
+
+            // Function to update the notification badge
+            function updateNotificationBadge() {
+                const badgeElement = document.getElementById('notification-badge');
+                if (badgeElement) {
+                    badgeElement.textContent = notificationCount;
+                    badgeElement.style.display = notificationCount > 0 ? 'inline-block' : 'none';
+                }
+            }
+
+            // Function to handle logout
+            function logout() {
+                // ... Your logout logic ...
+                socket.disconnect();
+            }
+
+            function isUserLoggedIn() {
+                // Replace with your actual login check logic
+                // Example using Flask-Login:
+                return '{{ current_user.is_authenticated }}'.toLowerCase() === 'true';
+            }
+
+            // Initialize SocketIO on page load
+            window.addEventListener('load', initializeSocketIO);
+        </script>
+        <script>
+            $(document).ready(function () {
+                $('.dropdown-item').click(function (event) {
+                    event.preventDefault(); // Prevent the link from navigating
+
+                    const notificationId = $(this).data('notification-id');
+                    const dropdown = $(this).closest('.dropdown'); // Get the closest parent dropdown
+
+                    $.ajax({
+                        url: `/notification/${notificationId}/mark_as_read`,
+                        type: 'POST',
+                        success: function (response) {
+                            if (response.success) {
+                                $(this).parent('li').remove(); // Remove notification from dropdown
+
+                                // Update notification badge
+                                const countElement = $('#notification-badge');
+                                let currentCount = parseInt(countElement.text());
+                                let newCount = currentCount - 1;
+                                countElement.text(newCount);
+
+                                // Hide the badge if the count is zero
+                                if (newCount <= 0) {
+                                    countElement.remove();
+                                } else {
+                                    countElement.text(newCount);
+                                }
+
+                                // Manually close the dropdown using Bootstrap's JS
+                                dropdown.dropdown('hide'); // Requires Bootstrap's JavaScript
+                            } else {
+                                // Handle AJAX error...
+                            }
+                        }.bind(this), // Bind 'this' to maintain context
+                        error: function (error) {
+                            // Handle AJAX error...
+                        },
+                    });
+                });
+            });
+        </script>
+
         {% block scripts %} {% endblock %}
 
         <!-- MAPS API SCRIPT -->
         {% if page == 'home' %}
-        <script>
+        <script defer>
+            let isDirectionMode = true; // Start with direction mode
+
+            function toggleMapMode() {
+                isDirectionMode = !isDirectionMode;
+                updateMapView();
+            }
+
+            function updateMapView() {
+                if (isDirectionMode) {
+                    showDirectionMode();
+                } else {
+                    showTPSOnlyMode();
+                }
+                updateToggleButtonText();
+            }
+
+            function updateToggleButtonText() {
+                const button = document.getElementById('toggleMapMode');
+                button.textContent = isDirectionMode ? 'Tampilkan Lokasi TPS' : 'Tampilkan Jalur';
+            }
+
+            function showDirectionMode() {
+                directions.setOrigin([userLon, userLat]);
+                directions.setDestination([currentTPS.longitude, currentTPS.latitude]);
+                map.flyTo({
+                    center: [(userLon + currentTPS.longitude) / 2, (userLat + currentTPS.latitude) / 2],
+                    zoom: 12,
+                    speed: 0.8,
+                    curve: 1,
+                });
+            }
+
+            function showTPSOnlyMode() {
+                directions.removeRoutes();
+                map.flyTo({
+                    center: [currentTPS.longitude, currentTPS.latitude],
+                    zoom: 15,
+                    speed: 0.8,
+                    curve: 1,
+                });
+            }
+
+            let currentTPS;
+            let userLat, userLon;
+        </script>
+        <script defer>
             let map; // Declare map globally
             let directions; // Declare directions globally
             let marker, startPopup, endPopup;
@@ -207,8 +393,10 @@
                 longitude: parseFloat(long_tps[index]),
             }));
 
+            console.log(data_tps);
+
             function initMap() {
-                mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseHZpemlybTJjNHgyanNoczVmMDVwOWkifQ.bWWz1a7SJ0EYnMm4W3sQ9Q';
+                mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseWxtanB4ZzBkOGIyaXM2NXpqNHltbTEifQ.3UzDa633gOXAJMYeAJZBvQ'; // Ganti dengan token Mapbox Anda
                 map = new mapboxgl.Map({
                     container: 'tps-detail-map',
                     style: 'mapbox://styles/mapbox/streets-v11',
@@ -222,11 +410,13 @@
                     unit: 'metric',
                     profile: 'mapbox/driving-traffic',
                     controls: false,
-                    interactive: false, // Tambahkan ini untuk menonaktifkan interaksi klik pada peta untuk mengubah rute
+                    interactive: false, // Add this to disable map clicking for route changes
                 });
 
-                //directions.interactive(false);
+                // Add directions control to the map
                 map.addControl(directions, 'top-left');
+
+                // Add navigation controls to the map
                 map.addControl(new mapboxgl.NavigationControl());
 
                 map.on('load', () => {
@@ -235,120 +425,115 @@
 
                     mapLoaded = true;
 
-                    // Loop through TPS data and calculate routes
-                    data_tps.forEach((tps, index) => {
-                        showRouteToTPS(tps, index); // Calculate and display for EACH TPS
-                    });
-
                     // Fetch user location and load TPS data
                     getUserLocation(initializeTPSData);
                 });
             }
 
-            // Function to initialize TPS data (after user location is available)
             function initializeTPSData(userLat, userLon) {
-                // Make AJAX call to get TPS data
                 getTPSData(userLat, userLon, 6);
-
-                // Now you can safely loop through the TPS data and calculate routes
                 data_tps.forEach((tps, index) => {
                     showRouteToTPS(tps, index, userLat, userLon);
                 });
             }
 
-            // Fungsi untuk menampilkan detail TPS dan peta, serta menghitung jarak
             function showTPSDetails(index) {
-                const tps = data_tps[index];
-                $('#tpsDetailModalLabel').text('Lokasi TPS: ' + tps.nama);
-                map.flyTo({
-                    center: [tps.longitude, tps.latitude],
-                    zoom: 15,
-                });
+                currentTPS = data_tps[index];
+                $('#tpsDetailModalLabel').text('Lokasi TPS: ' + currentTPS.nama);
 
-                // Ensure marker is removed before creating a new one
                 if (marker) {
                     marker.remove();
                 }
 
                 marker = new mapboxgl.Marker()
-                    .setLngLat([tps.longitude, tps.latitude])
-                    .setPopup(new mapboxgl.Popup().setHTML('<b>' + tps.nama + '</b>'))
+                    .setLngLat([currentTPS.longitude, currentTPS.latitude])
+                    .setPopup(new mapboxgl.Popup().setHTML('<b>' + currentTPS.nama + '</b>'))
                     .addTo(map);
 
-                // Panggil fungsi dengan index
-                showRouteToTPS(tps, index);
+                // Get user location before showing route
+                getUserLocation((lat, lon) => {
+                    userLat = lat;
+                    userLon = lon;
+                    isDirectionMode = true; // Start with direction mode
+                    updateMapView();
+                });
 
                 $('#tpsDetailModal').modal('show');
             }
 
-            // Tambahkan index ke definisi fungsi showRouteToTPS
-            function showRouteToTPS(tps, index) {
-                directions.removeRoutes();
-                getUserLocation((userLat, userLon) => {
-                    directions.setOrigin([userLon, userLat]);
-                    directions.setDestination([tps.longitude, tps.latitude]);
-                    directions.on('route', (e) => {
-                        if (e.route && e.route[0]) {
-                            const route = e.route[0];
-                            const distance = route.distance / 1000;
-                            const duration = Math.round(route.duration / 60);
+            function showRouteToTPS(tps, index, userLat, userLon) {
+                if (isDirectionMode) {
+                    directions.removeRoutes();
+                    if (userLat && userLon) {
+                        directions.setOrigin([userLon, userLat]);
+                        directions.setDestination([tps.longitude, tps.latitude]);
 
-                            $('#jarak-' + (index + 1)).text(distance.toFixed(2) + ' km');
-                            $('#waktu-' + (index + 1)).text(duration + ' menit');
+                        directions.on('route', (e) => {
+                            if (e.route && e.route[0]) {
+                                const route = e.route[0];
+                                const distance = route.distance / 1000;
+                                const duration = Math.round(route.duration / 60);
 
-                            if (mapLoaded) {
-                                // Update popup positions once after route is calculated
-                                startPopup
-                                    .setLngLat([userLon, userLat])
-                                    .setHTML('<b>' + 'Lokasi Anda' + '</b>')
-                                    .addTo(map);
+                                $('#jarak-' + (index + 1)).text(distance.toFixed(2) + ' km');
+                                $('#waktu-' + (index + 1)).text(duration + ' menit');
 
-                                endPopup
-                                    .setLngLat([tps.longitude, tps.latitude])
-                                    .setHTML('<b>' + tps.nama + '</b>')
-                                    .addTo(map);
+                                if (mapLoaded) {
+                                    startPopup
+                                        .setLngLat([userLon, userLat])
+                                        .setHTML('<b>' + 'Lokasi Anda' + '</b>')
+                                        .addTo(map);
+                                    endPopup
+                                        .setLngLat([tps.longitude, tps.latitude])
+                                        .setHTML('<b>' + tps.nama + '</b>')
+                                        .addTo(map);
+                                }
                             }
-                        }
-                    });
-                });
+                        });
+                    } else {
+                        console.error('Lokasi pengguna tidak tersedia. Tidak dapat menampilkan rute.');
+                    }
+                } else {
+                    showTPSOnlyMode();
+                }
             }
 
-            // Initialize the map when the document is ready
-            document.addEventListener('DOMContentLoaded', initMap);
+            document.addEventListener('DOMContentLoaded', function () {
+                initMap();
+                document.getElementById('toggleMapMode').addEventListener('click', toggleMapMode);
+            });
 
+            // Adjust the map size when the modal is shown
             $('#tpsDetailModal').on('shown.bs.modal', function () {
-                map.resize(); // No need for conditional resizing
-            });
-
-            // Ensure calculations run after the page content is fully loaded:
-            document.addEventListener('DOMContentLoaded', (event) => {
-                data_tps.forEach((tps, index) => {
-                    showRouteToTPS(tps, index); // Call after elements are ready
-                });
-            });
-
-            // After document loads
-            document.addEventListener('DOMContentLoaded', () => {
-                getUserLocation(getTPSData);
+                map.resize();
             });
 
             function getUserLocation(callback) {
                 if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition((position) => {
-                        callback(position.coords.latitude, position.coords.longitude);
-                    }, showError);
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            callback(position.coords.latitude, position.coords.longitude);
+                        },
+                        (error) => {
+                            console.error('Error getting user location:', error);
+                            // Use a default location or prompt the user to enter their location
+                            callback(null, null);
+                        },
+                        { timeout: 10000, maximumAge: 60000 }
+                    );
                 } else {
                     console.error('Geolocation is not supported by this browser.');
+                    callback(null, null);
                 }
             }
 
             function showError(error) {
+                // Display an error message related to geolocation issues
                 console.error('Error getting user location:', error);
             }
 
-            // Function to get TPS data (replace with your Flask route URL)
-            let radius = 6; // Default radius in kilometers, matching server-side default
+            let radius = 6;
             function getTPSData(latitude, longitude) {
+                //AJAX call to get TPS data
                 $.ajax({
                     url: `/get_tps_data/${latitude}/${longitude}?radius=${radius}`,
                     type: 'GET',
@@ -356,53 +541,52 @@
                         updateTPSList(response);
                     },
                     error: function (error) {
+                        // Display error messages related to AJAX call
                         console.error('AJAX Error:', error);
                     },
                 });
             }
 
-            // Function to update the TPS list (called after AJAX)
+            // Fungsi untuk mengupdate daftar TPS (dipanggil setelah AJAX)
             function updateTPSList(tpsData) {
-                // 1. Get a reference to your #tps-list container
                 const tpsListContainer = document.getElementById('tps-list');
 
-                // 2. Clear the existing content in the container
-                tpsListContainer.innerHTML = ''; // This will remove all child elements
+                tpsListContainer.innerHTML = ''; // Clear previous list
 
-                // 3. Process and add new TPS cards from tpsData
+                // Iterasi data tpsData and add new card for each TPS
                 tpsData.forEach((dataTps, index) => {
                     const cardDiv = document.createElement('div');
                     cardDiv.classList.add('card', 'card-body', 'rounded-4', 'shadow-sm', 'mb-3');
-
                     cardDiv.innerHTML = `
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h5 class="card-title fw-bold">${dataTps.nama} - ${dataTps.alamat}</h5>
+                                <h5 class="card-title fw-bold">${dataTps.nama} - ${dataTps.alamat}</h5> 
                                 <div class="card-text d-flex gap-2 align-items-center">
-                                    Jarak: 
+                                    Jarak:
                                     <span class="d-flex">
                                         <ion-icon class="text-danger" name="location"></ion-icon>
                                     </span> 
                                     <span class="fw-bold">
-                                        ${dataTps.jarak} km
+                                        ${dataTps.jarak} km 
                                     </span>
                                 </div>
                                 <div class="card-text d-flex gap-2 align-items-center">
                                     Waktu Tempuh: 
                                     <span class="d-flex">
-                                        <ion-icon class="text-primary" name="time"></ion-icon>
-                                    </span> 
+                                        <ion-icon class="text-primary" name="time"></ion-icon> 
+                                    </span>
                                     <span class="fw-bold">
                                         ${dataTps.waktu_tempuh} menit
                                     </span>
                                 </div>
-                            </div>
-                            <a href="#" class="btn d-flex align-items-center fs-3" 
-                               onclick="showTPSDetails(${index})">
+                            </div> 
+                            <a href="#" class="btn d-flex align-items-center fs-3" onclick="showTPSDetails(${index})">
                                 <ion-icon name="chevron-forward"></ion-icon>
-                            </a>
-                        </div> 
+                            </a> 
+                        </div>
                     `;
+
+                    // Append the cardDiv element to the list container
                     tpsListContainer.appendChild(cardDiv);
                 });
             }
