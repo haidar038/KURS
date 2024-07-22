@@ -6,10 +6,12 @@
     <div class="row">
         <div class="col-12">
             <div class="card card-body shadow-sm rounded-4 text-bg-success mb-3">
-                <h5 class="card-title text-center fw-bold">Total CO2 yang dihemat</h5>
-                <div class="d-flex align-items-end justify-content-center gap-3">
-                    <h1 class="fw-bold display-3 text-center mb-0 d-flex gap-3 justify-content-center align-items-center"><i class="fa fa-leaf"></i> {{ round(total_co2_dihemat/1000, 2) }} kg</h1>
-                    <span class="opacity-75 h4">= {{ round(total_ch4_dihemat/1000, 3) }}kg</span>
+                <h5 class="card-title text-center">Emisi Karbon yang dihemat</h5>
+                <div class="d-flex align-items-end justify-content-center align-items-center flex-column">
+                    <h1 class="fw-bold display-3 text-center mb-2 d-flex gap-3 justify-content-center align-items-center">
+                        <i class="fa fa-leaf"></i> {{ round(total_co2_dihemat/1000, 2) }}kg <span>CO<sup>2</sup></span>
+                    </h1>
+                    <span class="opacity-75 h4">&thickapprox; {{ round(total_ch4_dihemat/1000, 3) }}kg CH4</span>
                 </div>
             </div>
             {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
