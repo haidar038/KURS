@@ -31,11 +31,12 @@
                                 <div class="dropdown">
                                     <button class="btn btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fa-solid fa-ellipsis-vertical"></i></button>
                                     <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#">Detail</a></li>
                                         <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#updateTPS{{ tps_list.id }}" href="#">Update</a></li>
                                         <li><hr class="dropdown-divider" /></li>
                                         <li>
-                                            <a class="dropdown-item d-flex gap-2 align-items-center" role="button" href="{{ url_for('app_admin.delete_tps', id=tps_list.id ) }}">Hapus <i class="fa-solid fa-trash-can text-danger"></i></a>
+                                            <a class="dropdown-item d-flex align-items-center justify-content-between" role="button" href="{{ url_for('app_admin.delete_tps', id=tps_list.id ) }}"
+                                                >Hapus <i class="fa-solid fa-trash-can text-danger"></i
+                                            ></a>
                                         </li>
                                     </ul>
                                 </div>

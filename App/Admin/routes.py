@@ -24,6 +24,21 @@ def picture_allowed_file(filename):
 
 pagination_pages = 8
 
+def hitung_emisi_ch4(berat_sampah, doc=0.5, r=0.3, o=0.0):
+    """Menghitung emisi CH4 dari sampah organik menggunakan metode IPPC.
+
+    Args:
+        berat_sampah (float): Berat sampah organik dalam ton.
+        doc (float): Fraksi bahan organik terlarut (default: 0.5).
+        r (float): Fraksi sampah yang direduksi melalui dekomposisi (default: 0.3).
+        o (float): Fraksi sampah yang teroksidasi melalui pembakaran (default: 0.0).
+
+    Returns:
+        float: Emisi CH4 dalam ton.
+    """
+    emisi_ch4 = 1.0 * berat_sampah * doc * (1 - r) * (1 - o)
+    return emisi_ch4
+
 def hitung_co2_dihemat(jenis_sampah, berat_sampah):
     """Menghitung CO2 yang dihemat."""
 
@@ -32,7 +47,7 @@ def hitung_co2_dihemat(jenis_sampah, berat_sampah):
         faktor_emisi = FaktorEmisiCO2.query.filter_by(jenis_sampah=jenis_sampah).one().faktor_co2
         
         # Lakukan perhitungan jika faktor emisi ditemukan
-        co2_dihemat = faktor_emisi * berat_sampah * 1000
+        co2_dihemat = faktor_emisi * berat_sampah * 25 # Konversi CH4 ke CO2
         return co2_dihemat
 
     except NoResultFound:
@@ -46,6 +61,7 @@ def hitung_co2_dihemat(jenis_sampah, berat_sampah):
         print(f"Error database: {e}")
         flash(f"Terjadi kesalahan saat menghitung emisi CO2. Silahkan coba lagi.", category='danger')
         return 0.0
+
     
 @app_admin.context_processor
 def inject_unread_notifications():
@@ -55,6 +71,41 @@ def inject_unread_notifications():
     unread_notifications = []
   return dict(unread_notifications=unread_notifications)
 
+@app_admin.route('/admin/data/<string:data_type>')
+@login_required
+def get_admin_data(data_type):
+    page = request.args.get('page', 1, type=int)
+
+    if data_type == 'user':
+        pagination = Masyarakat.query.paginate(page=page, per_page=pagination_pages)
+        data = [{'index': i, 'nama': item.nama_lengkap, 'alamat': item.alamat, 'poin': item.poin} for i, item in enumerate(pagination.items, start=1)]
+    elif data_type == 'officer':
+        pagination = Petugas.query.paginate(page=page, per_page=pagination_pages)
+        data = [{'index': i, 'nama': item.nama_petugas, 'area': item.area_tugas, 'poin': item.poin} for i, item in enumerate(pagination.items, start=1)]
+    elif data_type == 'tps':
+        pagination = TPS.query.paginate(page=page, per_page=pagination_pages)
+        data = []
+        for i, item in enumerate(pagination.items, start=1):
+            # Hitung total_sampah menggunakan query SQLAlchemy
+            total_sampah = db.session.query(db.func.sum(Laporan.berat)).filter(Laporan.tps_id == item.id).scalar() or 0
+            data.append({
+                'index': i, 
+                'tps': item.nama, 
+                'alamat': item.alamat, 
+                'total_sampah': total_sampah
+            })
+    else:
+        return jsonify({'error': 'Invalid data type'}), 400
+
+    return jsonify({
+        'data': data,
+        'has_next': pagination.has_next,
+        'has_prev': pagination.has_prev,
+        'page': pagination.page,
+        'pages': pagination.pages
+    })
+
+
 @app_admin.route('/admin_page')
 @login_required
 def index():
@@ -63,6 +114,12 @@ def index():
     sampah = Laporan.query.filter_by(status='3').all()
     tps = TPS.query.all()
     artikel = Artikel.query.all()
+    user_type = User.query.filter_by(id=current_user.id).first()
+
+    if user_type.user_type == 'masyarakat':
+        return redirect(url_for('views.index'))
+    elif user_type.user_type == 'petugas':
+        return redirect(url_for('officer.index'))
 
     # Emit joined_room event for AppAdmin
     room = get_user_notification_room(current_user.id)
@@ -70,7 +127,16 @@ def index():
 
     data_sampah = defaultdict(float)
     for laporan in sampah:
-        data_sampah[laporan.jenis_sampah] += laporan.berat 
+        data_sampah[laporan.jenis_sampah] += laporan.berat
+
+    total_ch4_dihemat = 0
+    for laporan in sampah:
+        if laporan.jenis_sampah == 'Organik':  # Hanya hitung untuk sampah organik
+            total_ch4_dihemat += hitung_emisi_ch4(laporan.berat)  # Konversi kg ke ton
+        elif laporan.jenis_sampah == 'Anorganik':  # Hanya hitung untuk sampah anorganik
+            total_ch4_dihemat += hitung_emisi_ch4(laporan.berat)  # Konversi kg ke ton
+        elif laporan.jenis_sampah == 'Campuran':  # Hanya hitung untuk sampah campuran
+            total_ch4_dihemat += hitung_emisi_ch4(laporan.berat)  # Konversi kg ke ton
 
     total_co2_dihemat = 0
     for jenis_sampah, berat_sampah in data_sampah.items():
@@ -78,17 +144,15 @@ def index():
 
     total_vol_sampah = sum([sumSampah.berat for sumSampah in sampah])
 
-    user_type = User.query.filter_by(id=current_user.id).first()
-    if user_type.user_type == 'masyarakat':
-        return redirect(url_for('views.index'))
-    elif user_type.user_type == 'petugas':
-        return redirect(url_for('officer.index'))
-
     return render_template(
         'admin_page/index.html',
         round=round,
         user=user,
+        user_data=jsonify(get_admin_data('user').json).json,
+        officer_data=jsonify(get_admin_data('officer').json).json,
+        tps_data=jsonify(get_admin_data('tps').json).json,
         total_vol_sampah=total_vol_sampah,
+        total_ch4_dihemat=total_ch4_dihemat,
         total_co2_dihemat=total_co2_dihemat,
         unread_notifications=get_unread_notifications(),
         officer=officer,

@@ -1,12 +1,16 @@
 {% extends 'admin_page/base.html' %}
 <!-- BLOCK -->
 {% block container %}
+
 <div class="container pt-3">
     <div class="row">
         <div class="col-12">
             <div class="card card-body shadow-sm rounded-4 text-bg-success mb-3">
                 <h5 class="card-title text-center fw-bold">Total CO2 yang dihemat</h5>
-                <h1 class="fw-bold display-3 text-center mb-0 d-flex gap-3 justify-content-center align-items-center"><i class="fa fa-leaf"></i> {{ round(total_co2_dihemat/1000, 2) }} kg</h1>
+                <div class="d-flex align-items-end justify-content-center gap-3">
+                    <h1 class="fw-bold display-3 text-center mb-0 d-flex gap-3 justify-content-center align-items-center"><i class="fa fa-leaf"></i> {{ round(total_co2_dihemat/1000, 2) }} kg</h1>
+                    <span class="opacity-75 h4">= {{ round(total_ch4_dihemat/1000, 3) }}kg</span>
+                </div>
             </div>
             {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
             <div class="alert d-flex justify-content-between alert-dismissable rounded-4 fade show alert-{{ category }}" role="alert">
@@ -36,7 +40,7 @@
             </ul>
             <div class="tab-content" id="pills-tabContent">
                 <div class="tab-pane fade show active" id="pills-user" role="tabpanel" aria-labelledby="pills-user-tab" tabindex="0">
-                    <table class="table">
+                    <table class="table" id="userTable">
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
@@ -46,23 +50,39 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% if user %} {% for item in user %}
+                            {% for item in user_data['data'] %}
                             <tr>
-                                <th scope="row">{{ loop.index }}</th>
-                                <td>{{ item.nama_lengkap }}</td>
-                                <td>{{ item.alamat }}</td>
-                                <td>{{ item.poin }}</td>
+                                <th scope="row">{{ item['index'] }}</th>
+                                <td>{{ item['nama'] }}</td>
+                                <td>{{ item['alamat'] }}</td>
+                                <td>{{ item['poin'] }}</td>
                             </tr>
-                            {% endfor %} {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-secondary"><em>-- Belum ada data --</em></td>
-                            </tr>
-                            {% endif %}
+                            {% endfor %}
                         </tbody>
                     </table>
+                    <!-- PAGINATION -->
+                    <nav aria-label="Page navigation userPagination">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item {% if not user_data['has_prev'] %}disabled{% endif %}">
+                                <a class="page-link page-link text-success" href="#" data-page="{{ user_data['page'] - 1 }}" data-type="user" aria-label="Previous">
+                                    <span aria-hidden="true">«</span>
+                                </a>
+                            </li>
+                            {% for page_num in range(1, user_data['pages'] + 1) %}
+                            <li class="page-item {% if page_num == user_data['page'] %}active" aria-current="page" {% endif %}>
+                                <a class="page-link bg-success border-success" href="#" data-page="{{ page_num }}" data-type="user">{{ page_num }}</a>
+                            </li>
+                            {% endfor %}
+                            <li class="page-item {% if not user_data['has_next'] %}disabled{% endif %}">
+                                <a class="page-link page-link text-success" href="#" data-page="{{ user_data['page'] + 1 }}" data-type="user" aria-label="Next">
+                                    <span aria-hidden="true">»</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
                 <div class="tab-pane fade" id="pills-petugas" role="tabpanel" aria-labelledby="pills-petugas-tab" tabindex="0">
-                    <table class="table">
+                    <table class="table" id="officerTable">
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
@@ -72,23 +92,39 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% if officer %} {% for item in officer %}
+                            {% for item in officer_data['data'] %}
                             <tr>
-                                <th scope="row">{{ loop.index }}</th>
-                                <td>{{ item.nama_petugas }}</td>
-                                <td>{{ item.area_tugas }}</td>
-                                <td>{{ item.poin }}</td>
+                                <th scope="row">{{ item['index'] }}</th>
+                                <td>{{ item['nama'] }}</td>
+                                <td>{{ item['area'] }}</td>
+                                <td>{{ item['poin'] }}</td>
                             </tr>
-                            {% endfor %} {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-secondary"><em>-- Belum ada data --</em></td>
-                            </tr>
-                            {% endif %}
+                            {% endfor %}
                         </tbody>
                     </table>
+                    <!-- PAGINATION -->
+                    <nav aria-label="Page navigation officerPagination">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item {% if not officer_data['has_prev'] %}disabled{% endif %}">
+                                <a class="page-link text-success" href="#" data-page="{{ officer_data['page'] - 1 }}" data-type="officer" aria-label="Previous">
+                                    <span aria-hidden="true">«</span>
+                                </a>
+                            </li>
+                            {% for page_num in range(1, officer_data['pages'] + 1) %}
+                            <li class="page-item {% if page_num == officer_data['page'] %}active" aria-current="page" {% endif %}>
+                                <a class="page-link bg-success border-success" href="#" data-page="{{ page_num }}" data-type="officer">{{ page_num }}</a>
+                            </li>
+                            {% endfor %}
+                            <li class="page-item {% if not officer_data['has_next'] %}disabled{% endif %}">
+                                <a class="page-link text-success" href="#" data-page="{{ officer_data['page'] + 1 }}" data-type="officer" aria-label="Next">
+                                    <span aria-hidden="true">»</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
                 <div class="tab-pane fade" id="pills-tps" role="tabpanel" aria-labelledby="pills-tps-tab" tabindex="0">
-                    <table class="table">
+                    <table class="table" id="tpsTable">
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
@@ -98,26 +134,120 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% if tps %} {% for item in tps %}
+                            {% for item in tps_data['data'] %}
                             <tr>
-                                <th scope="row">{{ loop.index }}</th>
-                                <td>{{ item.nama }}</td>
-                                <td>{{ item.alamat }}</td>
-                                <td>
-                                    <!-- Hitung total_vol_sampah untuk item.id (tps_id) -->
-                                    {{ (sampah|selectattr("tps_id", "eq", item.id)|sum(attribute='berat'))|default(0) }}
-                                </td>
+                                <th scope="row">{{ item['index'] }}</th>
+                                <td>{{ item['tps'] }}</td>
+                                <td>{{ item['alamat'] }}</td>
+                                <td>{{ item['total_sampah'] }}</td>
                             </tr>
-                            {% endfor %} {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-secondary"><em>-- Belum ada data --</em></td>
-                            </tr>
-                            {% endif %}
+                            {% endfor %}
                         </tbody>
                     </table>
+                    <!-- PAGINATION -->
+                    <nav aria-label="Page navigation tpsPagination">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item {% if not tps_data['has_prev'] %}disabled{% endif %}">
+                                <a class="page-link text-success" href="#" data-page="{{ tps_data['page'] - 1 }}" data-type="tps" aria-label="Previous">
+                                    <span aria-hidden="true">«</span>
+                                </a>
+                            </li>
+                            {% for page_num in range(1, tps_data['pages'] + 1) %}
+                            <li class="page-item {% if page_num == tps_data['page'] %}active" aria-current="page" {% endif %}>
+                                <a class="page-link bg-success border-success" href="#" data-page="{{ page_num }}" data-type="tps">{{ page_num }}</a>
+                            </li>
+                            {% endfor %}
+                            <li class="page-item {% if not tps_data['has_next'] %}disabled{% endif %}">
+                                <a class="page-link text-success" href="#" data-page="{{ tps_data['page'] + 1 }}" data-type="tps" aria-label="Next">
+                                    <span aria-hidden="true">»</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </div>
     </div>
 </div>
+<script>
+    const updateTableContent = (data, tableId, paginationId) => {
+        const tbody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
+        tbody.innerHTML = ''; // Clear existing content
+
+        data['data'].forEach((item) => {
+            const row = tbody.insertRow();
+            // Assuming your data structure in Python matches the example below
+            row.insertCell().textContent = item['index'];
+            row.insertCell().textContent = item['nama' || 'tps'];
+            row.insertCell().textContent = item['alamat' || 'area'];
+            row.insertCell().textContent = item['poin' || 'total_sampah'];
+        });
+
+        updatePagination(data, paginationId);
+    };
+
+    const updatePagination = (data, paginationId) => {
+        const paginationNav = document.querySelector(`[aria-label="Page navigation ${paginationId}"]`);
+        paginationNav.innerHTML = '';
+
+        const paginationHTML = generatePaginationHTML(data);
+        paginationNav.innerHTML = paginationHTML;
+    };
+
+    const generatePaginationHTML = (data) => {
+        let html = `
+            <ul class="pagination justify-content-center">
+                <li class="page-item ${data['has_prev'] ? '' : 'disabled'}">
+                    <a class="page-link text-success" href="#" data-page="${data['page'] - 1}" data-type="${data['dataType']}" aria-label="Previous">
+                        <span aria-hidden="true">«</span>
+                    </a>
+                </li>
+        `;
+
+        for (let i = 1; i <= data['pages']; i++) {
+            html += `
+                <li class="page-item ${i === data['page'] ? 'active" aria-current="page' : ''}">
+                    <a class="page-link bg-success border-success" href="#" data-page="${i}" data-type="${data['dataType']}">${i}</a>
+                </li>
+            `;
+        }
+
+        html += `
+                <li class="page-item ${data['has_next'] ? '' : 'disabled'}">
+                    <a class="page-link text-success" href="#" data-page="${data['page'] + 1}" data-type="${data['dataType']}" aria-label="Next">
+                        <span aria-hidden="true">»</span>
+                    </a>
+                </li>
+            </ul>
+        `;
+
+        return html;
+    };
+
+    const fetchDataAndUpdate = (dataType, page) => {
+        fetch(`/admin/data/${dataType}?page=${page}`)
+            .then((response) => response.json())
+            .then((data) => {
+                data['dataType'] = dataType;
+                console.log(data);
+                const tableId = dataType === 'user' ? 'userTable' : dataType === 'officer' ? 'officerTable' : 'tpsTable';
+                const paginationId = dataType === 'user' ? 'userPagination' : dataType === 'officer' ? 'officerPagination' : 'tpsPagination';
+                updateTableContent(data, tableId, paginationId);
+            })
+            .catch((error) => console.error('Error:', error));
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const paginationLinks = document.querySelectorAll('.page-link');
+
+        paginationLinks.forEach((link) => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                const page = event.target.dataset.page;
+                const dataType = event.target.dataset.type;
+                fetchDataAndUpdate(dataType, page);
+            });
+        });
+    });
+</script>
 {% endblock %}

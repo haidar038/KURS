@@ -145,7 +145,7 @@
                         aria-selected="false"
                     >
                         <ion-icon name="location"></ion-icon>
-                        <small>Report</small>
+                        <small>Setor</small>
                     </a>
                 </li>
                 <li class="nav-item flex-fill" role="presentation">
@@ -247,6 +247,11 @@
                     // Optional: If you want to reconnect automatically
                     // setTimeout(initializeSocketIO, 3000); // Retry in 3 seconds
                 });
+
+                socket.on('misi_selesai', (data) => {
+                    // Handle update UI di sini (misalnya, tampilkan notifikasi, update poin)
+                    console.log(data.message);
+                });
             }
 
             // Function to join the user's notification room
@@ -317,10 +322,12 @@
                                 dropdown.dropdown('hide'); // Requires Bootstrap's JavaScript
                             } else {
                                 // Handle AJAX error...
+                                console.error('AJAX Error:', error);
                             }
                         }.bind(this), // Bind 'this' to maintain context
                         error: function (error) {
                             // Handle AJAX error...
+                            console.error('AJAX Error:', error);
                         },
                     });
                 });
@@ -368,7 +375,7 @@
                 directions.removeRoutes();
                 map.flyTo({
                     center: [currentTPS.longitude, currentTPS.latitude],
-                    zoom: 15,
+                    zoom: 18,
                     speed: 0.8,
                     curve: 1,
                 });
@@ -399,7 +406,7 @@
                 mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseWxtanB4ZzBkOGIyaXM2NXpqNHltbTEifQ.3UzDa633gOXAJMYeAJZBvQ'; // Ganti dengan token Mapbox Anda
                 map = new mapboxgl.Map({
                     container: 'tps-detail-map',
-                    style: 'mapbox://styles/mapbox/streets-v11',
+                    style: 'mapbox://styles/mapbox/standard',
                     center: [long_tps[0], lat_tps[0]],
                     zoom: 10,
                     interactive: false,
@@ -420,7 +427,7 @@
                 map.addControl(new mapboxgl.NavigationControl());
 
                 map.on('load', () => {
-                    startPopup = new mapboxgl.Popup({ closeOnClick: false }).setHTML('<b>' + 'Lokasi Anda' + '</b>');
+                    startPopup = new mapboxgl.Popup({ closeOnClick: false });
                     endPopup = new mapboxgl.Popup({ closeOnClick: false });
 
                     mapLoaded = true;
@@ -551,7 +558,7 @@
             function updateTPSList(tpsData) {
                 const tpsListContainer = document.getElementById('tps-list');
 
-                tpsListContainer.innerHTML = ''; // Clear previous list
+                // tpsListContainer.innerHTML = ''; // Clear previous list
 
                 // Iterasi data tpsData and add new card for each TPS
                 tpsData.forEach((dataTps, index) => {
@@ -560,29 +567,29 @@
                     cardDiv.innerHTML = `
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h5 class="card-title fw-bold">${dataTps.nama} - ${dataTps.alamat}</h5> 
+                                <h5 class="card-title fw-bold">${dataTps.nama} - ${dataTps.alamat}</h5>
                                 <div class="card-text d-flex gap-2 align-items-center">
                                     Jarak:
                                     <span class="d-flex">
                                         <ion-icon class="text-danger" name="location"></ion-icon>
-                                    </span> 
+                                    </span>
                                     <span class="fw-bold">
-                                        ${dataTps.jarak} km 
+                                        ${dataTps.jarak} km
                                     </span>
                                 </div>
                                 <div class="card-text d-flex gap-2 align-items-center">
-                                    Waktu Tempuh: 
+                                    Waktu Tempuh:
                                     <span class="d-flex">
-                                        <ion-icon class="text-primary" name="time"></ion-icon> 
+                                        <ion-icon class="text-primary" name="time"></ion-icon>
                                     </span>
                                     <span class="fw-bold">
                                         ${dataTps.waktu_tempuh} menit
                                     </span>
                                 </div>
-                            </div> 
+                            </div>
                             <a href="#" class="btn d-flex align-items-center fs-3" onclick="showTPSDetails(${index})">
                                 <ion-icon name="chevron-forward"></ion-icon>
-                            </a> 
+                            </a>
                         </div>
                     `;
 

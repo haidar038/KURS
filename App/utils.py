@@ -1,10 +1,11 @@
 from itsdangerous import URLSafeTimedSerializer
 from flask_socketio import emit
+from flask_mail import Message
 from flask_login import current_user
-from flask import current_app
+from flask import current_app, url_for, render_template
 
 from App.models import Notification
-from App import db
+from App import db, mail
 
 def generate_confirmation_token(email, expiration=3600):
     serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
@@ -21,6 +22,17 @@ def confirm_token(token, expiration=3600):
     except:
         return False
     return email
+
+def send_password_reset_email(user):
+    """Sends an email with a link to reset the user's password."""
+    token = user.get_reset_password_token()
+    reset_url = url_for('auth.reset_password', token=token, _external=True)
+    msg = Message(
+        subject='Kurir Sampah Reset Password',
+        recipients=[user.email],
+        html=render_template('auth/reset_password_email_template.html', reset_url=reset_url, user=user)
+    )
+    mail.send(msg)
 
 def get_unread_notifications():
     if current_user.is_authenticated:
@@ -56,4 +68,4 @@ def send_notification(recipient_id, message, sender_id=None):
         'message': message, 
         'room': room,
         'count': unread_count
-    }, room=room)
+    }, room=room, namespace='/')

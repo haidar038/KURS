@@ -6,8 +6,8 @@ from flask_socketio import emit
 from flask_login import current_user, login_required
 from babel.dates import format_datetime
 # Import other necessary modules and models
-from App.models import TPS, Artikel, Laporan, Petugas, User, Notification
-from App.utils import get_user_notification_room, get_unread_notifications
+from App.models import TPS, Artikel, Laporan, Petugas, User, Notification, Reward, RiwayatReward
+from App.utils import get_user_notification_room, get_unread_notifications, send_notification
 from App import db
 
 import pytz, os, json
@@ -88,6 +88,7 @@ def index():
 
     return render_template(
         'officer_page/index.html',
+        user=Petugas.query.get(current_user.id),
         new_reports=new_reports,
         on_process_reports=on_process_reports,
         finished_reports=finished_reports,
@@ -123,7 +124,7 @@ def reports_list():
         if laporan.tps_id:
             laporan.tps = TPS.query.get(laporan.tps_id) 
 
-    return render_template('officer_page/laporan.html', foto_laporan=foto_laporan, data_tps=data_tps, data_laporan=data_laporan, page=page, per_page=per_page, page_name='reports')
+    return render_template('officer_page/laporan.html', min=min, max=max, foto_laporan=foto_laporan, data_tps=data_tps, data_laporan=data_laporan, page=page, per_page=per_page, page_name='reports')
 
 @officer.route('/report_picture/<string:id>')
 def report_picture(id):
@@ -203,7 +204,7 @@ def riwayat_laporan():
         return redirect(url_for('app_admin.index'))
 
     page = request.args.get('page', 1, type=int)
-    per_page = 8 
+    per_page = 8
     data_laporan = Laporan.query.filter_by(status='3').paginate(page=page, per_page=per_page)
 
     for laporan in data_laporan.items:
@@ -212,7 +213,40 @@ def riwayat_laporan():
         if laporan.tps_id:
             laporan.tps = TPS.query.get(laporan.tps_id)
 
-    return render_template('officer_page/riwayat.html', data_laporan=data_laporan, page=page, per_page=per_page, page_name='riwayat')
+    return render_template('officer_page/riwayat.html', min=min, max=max, data_laporan=data_laporan, page=page, per_page=per_page, page_name='riwayat')
+
+
+# todo ====================== REWARD SECTION ==========================
+@officer.route('/officer_dashboard/reward')
+@login_required
+def reward():
+    daftar_reward = Reward.query.order_by(Reward.kategori, Reward.nama_reward).all()
+    user = Petugas.query.get(current_user.id)
+    return render_template('reward.html', 
+                           daftar_reward=daftar_reward, 
+                           user=user,
+                           page='reward')
+
+@officer.route('/officer_dashboard/klaim_reward/<reward_id>')
+@login_required
+def klaim_reward(reward_id):
+    reward = Reward.query.get_or_404(reward_id)
+    user = Petugas.query.get(current_user.id)
+
+    if user.poin >= reward.poin_diperlukan:
+        # Kurangi poin user
+        user.poin -= reward.poin_diperlukan
+        
+        # Catat riwayat reward
+        riwayat = RiwayatReward(user_id=user.user_id, reward_id=reward.id)
+        db.session.add(riwayat)
+        db.session.commit()
+        send_notification(current_user.id, f"Selamat, Anda telah mengklaim reward {reward.nama_reward}!")
+        flash('Reward berhasil diklaim!', 'success')
+    else:
+        flash('Poin Anda tidak cukup.', 'danger')
+
+    return redirect(url_for('views.reward'))
 
 
 # todo ====================== NOTIFICATION SECTION ===========================
@@ -323,8 +357,6 @@ def update_email(id):
 
 @officer.route('/officer_dashboard/profil/<string:id>/update_password', methods=['GET', 'POST'])
 def update_password(id):
-    user = Petugas.query.get_or_404(id)
-
     if request.method == 'POST':
         old_password = request.form.get('old_password')
         new_password = request.form.get('new_password')

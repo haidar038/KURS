@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, send_file, request, redirect, flash, url_for, current_app, session
 from flask_mail import Message
-from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_socketio import emit
 from flask_login import current_user, login_user, logout_user, login_required
@@ -8,7 +7,7 @@ from datetime import datetime
 
 # Import other necessary modules and models
 from App.models import User, Masyarakat, Petugas, Notification
-from App.utils import confirm_token, generate_confirmation_token
+from App.utils import confirm_token, generate_confirmation_token, send_password_reset_email
 from App import db, login_manager, mail, limiter
 
 import random, string, logging
@@ -43,7 +42,7 @@ def send_confirmation_email(user_email):
         raise
 
 @auth.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("100 per minute")
 def login():
     """Handles user login."""
     if current_user.is_authenticated:
@@ -199,6 +198,42 @@ def confirm_email(token):
             emit('new_user_confirmed', {'message': notification.message}, room=admin.id, namespace='/')
         flash('Anda telah mengonfirmasi akun Anda. Terima kasih!', 'success')
     return redirect(url_for('auth.login'))
+
+@auth.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    """Handles user request to reset forgotten password."""
+    if request.method == 'POST':
+        email = request.form['email']
+        user = User.query.filter_by(email=email).first()
+        if user:
+            send_password_reset_email(user)
+            flash('Email untuk atur ulang kata sandi telah terkirim. Silahkan periksa kotak masuk anda.', 'info')
+            return redirect(url_for('auth.login'))
+        else:
+            flash('Tidak ditemukan akun dengan email tersebut.', 'warning')
+            return redirect(url_for('auth.forgot_password'))
+    return render_template('auth/forgot_password.html')
+
+@auth.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Handles password reset with the provided token."""
+    user = User.verify_reset_password_token(token)
+    if not user:
+        flash('Token tidak valid atau sudah kadaluarsa', 'warning')
+        return redirect(url_for('auth.login'))
+    if request.method == 'POST':
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+        if password != confirm_password:
+            flash('Konfirmasi kata sandi tidak cocok.', 'danger')
+            return redirect(url_for('auth.reset_password', token=token)) 
+        
+        user.password_hash=generate_password_hash(password, method='pbkdf2')
+
+        db.session.commit()
+        flash('Kata sandi anda telah diperbarui! Silahkan masuk dengan kata sandi baru.', 'success')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/reset_password.html')
 
 @auth.route('/resend')
 @limiter.limit("3 per hour")

@@ -31,8 +31,14 @@
                                 {% else %} Tidak ada thumbnail {% endif %}
                             </td>
                             <td>{{ posts.judul }}</td>
-                            <td class="align-middle">
-                                <a href="{{ url_for('app_admin.delete_post', id=posts.id ) }}" role="button" class="btn btn-danger align-items-center justify-content-center d-flex flex-column"><ion-icon name="trash"></ion-icon></a>
+                            <td class="align-middle text-center">
+                                <div class="dropdown">
+                                    <button class="btn btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis-vertical"></i></button>
+                                    <ul class="dropdown-menu">
+                                        <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#deleteArticle{{ posts.id }}">Hapus Artikel</button></li>
+                                        <li><button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#updateArticle{{ posts.id }}">Edit Artikel</button></li>
+                                    </ul>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -160,8 +166,64 @@
         </div>
     </div>
 </div>
-{% endblock %} {% block scripts %} {{ ckeditor.load() }}
-<script src="https://cdn.ckeditor.com/4.10.0/standard/ckeditor.js"></script>
+
+<!-- Update Modal -->
+{% for item in post %}
+<div class="modal fade" id="updateArticle{{ item.id }}" tabindex="-1" aria-labelledby="updateArticle{{ item.id }}Label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="updateArticle{{ item.id }}Label">Tulis Artikel</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="judul_up" name="judul_up" placeholder="Judul Artikel" value="{{ item.judul }}" required />
+                            <label for="judul_up">Judul Artikel</label>
+                        </div>
+                        <div class="mb-3">
+                            <div class="mb-3">
+                                <img src="{{ item.thumbnail }}" class="img-fluid w-100" alt="" />
+                            </div>
+                            <label for="thumbnail_up" class="form-label">Upload Thumbnail</label>
+                            <input type="file" class="form-control" id="thumbnail_up" name="thumbnail_up" />
+                        </div>
+                        {{ ckeditor.create(name='content_up', value=item.konten) }}
+                        <!-- <button type="submit" class="btn btn-success">Post Artikel</button> -->
+                    </div>
+                    <!-- <button type="submit" class="btn btn-success w-100">Simpan</button> -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-success d-flex gap-2 align-items-center">Update <i class="fa-solid fa-pen-to-square"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteArticle{{ item.id }}" tabindex="-1" aria-labelledby="deleteArticle{{ item.id }}Label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="deleteArticle{{ item.id }}Label">Tulis Artikel</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0 text-center">Apakah anda yakin akan menghapus artikel dengan judul <b>{{ item.judul }}</b>?</p>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <a class="btn btn-danger" role="button" href="{{ url_for('app_admin.delete_post', id=item.id ) }}">Ya! Hapus</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endfor %} {% endblock %} {% block scripts %} {{ ckeditor.load() }}
+<script src="//cdn.ckeditor.com/4.24.0-lts/full/ckeditor.js"></script>
 <!-- SCRIPTS -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {

@@ -3,27 +3,35 @@
     <div class="row">
         <div class="col">
             <div class="card card-body rounded-4 text-bg-success mb-3">
+                <span class="h4 text-center mb-3">Emisi yang Dihemat</span>
                 <div class="d-flex gap-3 justify-content-between">
                     <div class="d-flex flex-column">
-                        <p class="h1 display-1"><span class="fw-bold">{{ round(total_ch4_dihemat) }}</span> ppm</p>
-                        <p class="h3">CH<sub>4</sub> dihemat</p>
+                        <h2 class="display-3 text-center mb-0 d-flex gap-3 justify-content-center align-items-center mb-2">
+                            <span class="fw-bold">{{ round(total_co2_dihemat/1000, 2) }}kg</span> <span>CO<sup>2</sup></span>
+                        </h2>
+                        <em class="opacity-75 h4 fw-normal">&thickapprox; <span>{{ round(total_ch4_dihemat/1000, 3) }}</span>kg <span>CH4</span></em>
                     </div>
-                    <div class="d-flex flex-column justify-content-between">
+                    <div class="d-flex flex-column justify-content-start align-items-end">
+                        <!-- <img src="{{ url_for('static', filename='img/co2-icon.svg' ) }}" alt="CO2 Icon.svg" class="img-fluid w-50" /> -->
                         <span class="h1 display-1"><i class="fa fa-leaf"></i></span>
                     </div>
                 </div>
             </div>
             <div class="row mb-3">
                 <div class="col-6">
-                    <div class="card card-body rounded-4 text-bg-light">
+                    <div class="card card-body rounded-4 text-bg-light p-2">
                         <span class="mb-0 badge text-bg-success mb-2">Poin</span>
-                        <span class="h2 mb-0"><span class="text-success">{{ user.poin }}</span> Poin</span>
+                        <div class="d-flex justify-content-center">
+                            <span class="h2 mb-0 d-flex gap-2 align-items-center justify-content-center"><span class="text-success">{{ user.poin }} Poin</span> <i class="fa-solid fa-medal"></i></span>
+                        </div>
                     </div>
                 </div>
                 <div class="col-6">
-                    <div class="card card-body rounded-4 text-bg-light">
+                    <div class="card card-body rounded-4 text-bg-light p-2">
                         <span class="mb-0 badge text-bg-success mb-2">Sampah Disetor</span>
-                        <span class="h2 mb-0"><span class="text-success">{{ vol_sampah }}</span>kg </span>
+                        <div class="d-flex justify-content-center">
+                            <span class="h2 mb-0 d-flex gap-2 align-items-center justify-content-center"><span class="text-success">{{ vol_sampah }}kg</span><i class="fa-solid fa-recycle"></i></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -34,36 +42,60 @@
             </div>
             {% endfor %} {% endif %} {% endwith %}
             <hr />
+            <p class="fw-bold h5 text-success text-center mb-3">Misi Anda <span class="text-dark">({{ misi_status.values() | sum | default(0) }}/{{ misi | length }})</span></p>
+            <div class="row">
+                {% for mission in misi %}
+                <div class="col-6 mb-3">
+                    {% if status_misi %}
+                    <div class="card card-body h-100 text-bg-success rounded-4 d-flex flex-column align-items-center justify-content-center {% if misi_status.get(mission.id) %} text-bg-success {% endif %}">
+                        <p class="fw-bold mb-2">{{ mission.nama_misi }}</p>
+                    </div>
+                    {% else %}
+                    <div class="card card-body h-100 rounded-4 d-flex flex-column align-items-center justify-content-center {% if misi_status.get(mission.id) %} text-bg-success {% endif %}">
+                        <p class="fw-bold mb-0">{{ mission.nama_misi }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                <div class="col">
+                    <a href="{{ url_for('views.misi' ) }}" class="btn btn-success w-100 mb-2">Buka Misi &nbsp;<i class="fa-solid fa-square-arrow-up-right"></i></a>
+                    <a href="{{ url_for('views.reward' ) }}" class="btn btn-outline-success w-100">Buka Reward &nbsp;<i class="fa-solid fa-square-arrow-up-right"></i></a>
+                </div>
+            </div>
+            <hr />
             <p class="fw-bold h5 text-success text-center">Lokasi TPS Terdekat</p>
             <div id="tps-list"></div>
             <hr />
             <p class="fw-bold h5 text-success text-center">Artikel</p>
+
             <div id="articleCarousel" class="carousel slide">
                 <div class="carousel-inner">
                     <div class="carousel-item active">
                         {% for articles in artikel %}
-                        <div class="card card-body rounded-4 shadow">
-                            <p class="fw-bold h5 mb-0">{{ articles.judul }}</p>
-                            <hr />
-                            <div class="col text-truncate mb-3">
+                        <div class="card card-body rounded-4 text-bg-success">
+                            <p class="fw-bold h5 mb-3">{{ articles.judul }}</p>
+                            <!-- <hr /> -->
+                            <!-- <div class="col text-truncate mb-3">
                                 <div class="truncate-multi-line">{{ articles.konten | safe }}</div>
+                            </div> -->
+                            <div class="d-flex justify-content-center">
+                                <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#artikel{{ articles.id }}">Baca Selengkapnya</button>
                             </div>
-                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#artikel{{ articles.id }}">Baca Selengkapnya</button>
-                            <!-- Modal -->
-                            <div class="modal fade" id="artikel{{ articles.id }}" tabindex="-1" aria-labelledby="artikel{{ articles.id }}Label" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-scrollable">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h1 class="modal-title fs-5" id="artikel{{ articles.id }}Label">{{ articles.judul }}</h1>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <img class="mb-3 img-fluid w-100" src="{{ articles.thumbnail }}" alt="Profile Picture" style="width: 120px" />
-                                            <p class="mb-0">{{ articles.konten | safe }}</p>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
-                                        </div>
+                        </div>
+                        <!-- Modal -->
+                        <div class="modal fade text-dark" id="artikel{{ articles.id }}" tabindex="-1" aria-labelledby="artikel{{ articles.id }}Label" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h1 class="modal-title fs-5" id="artikel{{ articles.id }}Label">{{ articles.judul }}</h1>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <img class="mb-3 img-fluid w-100" src="{{ articles.thumbnail }}" alt="Profile Picture" style="width: 120px" />
+                                        <p class="mb-0">{{ articles.konten | safe }}</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
                                     </div>
                                 </div>
                             </div>
@@ -72,7 +104,7 @@
                     </div>
                 </div>
                 <button class="carousel-control-prev" type="button" data-bs-target="#articleCarousel" data-bs-slide="prev">
-                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="carousel-control-prev-icon btn-dark" aria-hidden="true"></span>
                     <span class="visually-hidden">Previous</span>
                 </button>
                 <button class="carousel-control-next" type="button" data-bs-target="#articleCarousel" data-bs-slide="next">
@@ -95,7 +127,7 @@
                                     <div id="tps-detail-map"></div>
                                 </div>
                             </div>
-                            <div class="mt-2">
+                            <div class="mt-3">
                                 <button id="toggleMapMode" class="btn btn-success btn-sm">Ubah Mode</button>
                             </div>
                         </div>

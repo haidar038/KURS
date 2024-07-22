@@ -1,7 +1,8 @@
 import uuid
+
+from flask import current_app
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy.ext.hybrid import hybrid_property
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 from datetime import datetime
 from . import db  # Ensure correct relative import
 
@@ -30,6 +31,34 @@ class User(db.Model, UserMixin):
 
     # def verify_password(self, password):
     #     return check_password_hash(self.password_hash, password)
+
+    def get_reset_password_token(self, expires_in=600):
+        """Generate a reset password token that expires after the specified time."""
+        return URLSafeTimedSerializer(current_app.config['SECRET_KEY']).dumps(
+            {'user_id': self.id},
+            salt=current_app.config['SECURITY_PASSWORD_SALT']
+        )
+
+    @staticmethod
+    def verify_reset_password_token(token):
+        """Verify a password reset token and return the associated user."""
+        try:
+            serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+            data = serializer.loads(
+                token,
+                salt=current_app.config['SECURITY_PASSWORD_SALT'],
+                max_age=600  # Token valid for 10 minutes
+            )
+            user_id = data.get('user_id')
+            if user_id is None:
+                return None
+            user = User.query.get(user_id)
+            return user
+        except SignatureExpired:
+            return None  # Token expired
+        except Exception as e:
+            print(f"Error verifying token: {e}")
+            return None
 
 class AppAdmin(db.Model, UserMixin):
     __tablename__ = 'app_admin'
@@ -131,15 +160,37 @@ class FaktorEmisiCO2(db.Model):
     jenis_sampah = db.Column(db.String(50), unique=True, nullable=False)
     faktor_co2 = db.Column(db.Float(20), nullable=False)  # CO2 yang dihemat per kg
 
-# === Model Baru untuk Sampah yang Disetor ===
-# class SampahDisetor(db.Model):
-#     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-#     masyarakat_id = db.Column(db.String(36), db.ForeignKey('masyarakat.user_id'), nullable=False)
-#     foto = db.Column(db.String(255), nullable=False)
-#     berat = db.Column(db.Float, nullable=False)  # Dalam kilogram
-#     latitude = db.Column(db.Float, nullable=True)  # Tambahkan atribut latitude
-#     longitude = db.Column(db.Float, nullable=True)  # Tambahkan atribut longitude
-#     jenis_sampah = db.Column(db.String(50), nullable=False)
-#     tanggal_setor = db.Column(db.DateTime, default=datetime.now)
+# === Model Untuk Misi, Poin & Reward
 
-#     masyarakat = db.relationship('Masyarakat', backref='sampah_disetor')
+class Misi(db.Model):
+    __tablename__ = 'misi'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    nama_misi = db.Column(db.String(100), nullable=False)
+    deskripsi = db.Column(db.Text, nullable=False)
+    poin = db.Column(db.Integer, nullable=False)
+    frekuensi = db.Column(db.String(50), nullable=False)  # Contoh: 'Harian', '2 kali seminggu'
+
+class ProgressMisi(db.Model):
+    __tablename__ = 'progress_misi'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    masyarakat_id = db.Column(db.String(36), db.ForeignKey('masyarakat.user_id'), nullable=False)
+    misi_id = db.Column(db.String(36), db.ForeignKey('misi.id'), nullable=False)
+    tanggal_selesai = db.Column(db.Date, nullable=True) # Tanggal misi diselesaikan
+    status = db.Column(db.String(20), nullable=False, default='Belum Selesai') # Status: 'Selesai', 'Belum Selesai'
+
+    misi = db.relationship('Misi', backref='progress_misi', lazy=True) 
+
+class Reward(db.Model):
+    __tablename__ = 'reward'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    nama_reward = db.Column(db.String(100), nullable=False)
+    kategori = db.Column(db.Text, nullable=True)
+    poin_diperlukan = db.Column(db.Integer, nullable=False)
+    # Anda dapat menambahkan kolom lain sesuai kebutuhan, seperti gambar reward.
+
+class RiwayatReward(db.Model):
+    __tablename__ = 'riwayat_reward'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
+    reward_id = db.Column(db.String(36), db.ForeignKey('reward.id'), nullable=False)
+    tanggal_klaim = db.Column(db.DateTime, default=datetime.now)

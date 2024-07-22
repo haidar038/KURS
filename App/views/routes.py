@@ -4,11 +4,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import current_user, login_required
 from babel.dates import format_datetime
 from flask_socketio import emit
+from sqlalchemy.exc import NoResultFound
 from collections import defaultdict
 from math import radians, sin, cos, sqrt, asin
+from datetime import datetime, timedelta
 # Import other necessary modules and models
-from App.models import TPS, Artikel, Laporan, Masyarakat, User, Notification, Petugas
-from App.utils import get_unread_notifications
+from App.models import TPS, Artikel, Laporan, Masyarakat, User, Notification, Petugas, FaktorEmisiCO2, Misi, ProgressMisi, Reward, RiwayatReward
+from App.utils import get_unread_notifications, send_notification
 from App import db
 
 import pytz, os, json
@@ -16,6 +18,8 @@ import pytz, os, json
 views = Blueprint('views', __name__)
 
 PICTURE_ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+pagination_pages = 8
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in PICTURE_ALLOWED_EXTENSIONS
@@ -64,6 +68,52 @@ def hitung_emisi_ch4(berat_sampah, doc=0.5, r=0.3, o=0.0):
     """
     emisi_ch4 = 1.0 * berat_sampah * doc * (1 - r) * (1 - o)
     return emisi_ch4
+
+def hitung_co2_dihemat(jenis_sampah, berat_sampah):
+    """Menghitung CO2 yang dihemat."""
+
+    try:
+        # Ambil faktor emisi dari database
+        faktor_emisi = FaktorEmisiCO2.query.filter_by(jenis_sampah=jenis_sampah).one().faktor_co2
+        
+        # Lakukan perhitungan jika faktor emisi ditemukan
+        co2_dihemat = faktor_emisi * berat_sampah * 25 # Konversi CH4 ke CO2
+        return co2_dihemat
+
+    except NoResultFound:
+        # Tangani jika jenis sampah tidak ada dalam database
+        print(f"Faktor emisi untuk jenis sampah '{jenis_sampah}' tidak ditemukan.")
+        flash(f"Faktor emisi untuk jenis sampah '{jenis_sampah}' tidak ditemukan.", category='danger')
+        return 0.0
+
+    except Exception as e:
+        # Tangani error database generik
+        print(f"Error database: {e}")
+        flash(f"Terjadi kesalahan saat menghitung emisi CO2. Silahkan coba lagi.", category='danger')
+        return 0.0
+    
+def reset_misi_harian():
+    """Fungsi untuk mereset progress misi harian semua pengguna.
+
+    Fungsi ini akan:
+    1. Mengambil semua progress misi dengan tanggal_selesai hari ini.
+    2. Mengupdate status progress misi tersebut menjadi 'Belum Selesai'.
+    3. Menghapus tanggal_selesai untuk misi harian yang belum diselesaikan.
+    4. Menyimpan perubahan ke database.
+    """
+    now = datetime.now() + timedelta(hours=9)  # Waktu Indonesia Barat (WIB)
+    today = now.date()
+
+    progress_misi_hari_ini = ProgressMisi.query.filter_by(tanggal_selesai=today).all()
+
+    for progress in progress_misi_hari_ini:
+        if progress.misi.frekuensi == 'Harian':
+            if progress.status == 'Belum Selesai':
+                # Reset tanggal selesai untuk misi harian yang belum selesai
+                progress.tanggal_selesai = None 
+            progress.status = 'Belum Selesai'  # Reset status
+
+    db.session.commit()
 
 @views.context_processor
 def inject_unread_notifications():
@@ -133,7 +183,7 @@ def index():
         return redirect(url_for('app_admin.index'))
 
     tps = TPS.query.all()
-    artikel = Artikel.query.all()
+    artikel = Artikel.query.limit(3)
     sampah = Laporan.query.filter_by(status='3').all()
 
     nama_tps = [namaTPS.nama for namaTPS in tps]
@@ -156,16 +206,38 @@ def index():
     for laporan in laporan_sampah:
         if laporan.jenis_sampah == 'Organik':  # Hanya hitung untuk sampah organik
             total_ch4_dihemat += hitung_emisi_ch4(laporan.berat)  # Konversi kg ke ton
-    print(total_ch4_dihemat)
-    print(json.dumps(nama_tps))
-    print(json.dumps(lat_tps))
-    print(json.dumps(long_tps))
+        elif laporan.jenis_sampah == 'Anorganik':  # Hanya hitung untuk sampah anorganik
+            total_ch4_dihemat += hitung_emisi_ch4(laporan.berat)  # Konversi kg ke ton
+        elif laporan.jenis_sampah == 'Campuran':  # Hanya hitung untuk sampah campuran
+            total_ch4_dihemat += hitung_emisi_ch4(laporan.berat)  # Konversi kg ke ton
+
+    total_co2_dihemat = 0
+    for jenis_sampah, berat_sampah in data_sampah.items():
+        total_co2_dihemat += hitung_co2_dihemat(jenis_sampah, berat_sampah)
 
     user = Masyarakat.query.filter_by(user_id=current_user.id).first()
 
     unread_notifications = get_unread_notifications()
 
-    return render_template('index.html', 
+    misi = Misi.query.all()
+    # Ambil progress misi untuk user yang login
+    progress_user = ProgressMisi.query.filter_by(
+        masyarakat_id=current_user.id,
+        status='Selesai',
+        tanggal_selesai=datetime.now().date()
+    ).all()
+
+    # Buat dictionary untuk menyimpan status setiap misi
+    misi_status = {}
+    for m in misi:
+        misi_status[m.id] = False  # Default: misi belum selesai
+
+    # Update status misi berdasarkan progress_user
+    for prog in progress_user:
+        misi_status[prog.misi_id] = True  # Tandai misi sebagai selesai
+
+    return render_template('index.html',
+                            total_co2_dihemat=total_co2_dihemat,
                             total_ch4_dihemat=total_ch4_dihemat,
                             nama_tps=json.dumps(nama_tps),
                             lat_tps=json.dumps(lat_tps),
@@ -173,6 +245,8 @@ def index():
                             vol_sampah=total_berat_sampah,
                             tps=tps, # You still might need this for modal or other parts of the page
                             user=user,
+                            misi=misi,
+                            misi_status=misi_status,
                             artikel=artikel,
                             unread_notifications=unread_notifications,
                             round=round,
@@ -210,6 +284,9 @@ def reports():
         berat = request.form.get('berat')
         jenis_sampah = request.form.get('jenis_sampah')
 
+        # daftar_misi = Misi.query.all()
+        misi = Misi.query.filter_by(nama_misi='Setor Sampahmu').first()
+
         # Validasi data
         if not foto or not allowed_file(foto.filename):
             flash('File foto tidak valid!', 'danger')
@@ -222,6 +299,16 @@ def reports():
         # Tambahkan poin setelah laporan sampah disimpan
         masyarakat = Masyarakat.query.get(current_user.id)  # Ambil objek Masyarakat 
         masyarakat.tambah_poin() # Tambahkan 15 poin (default) 
+
+        # Simpan data ke progres misi
+        new_progress = ProgressMisi(
+            masyarakat_id=current_user.id,
+            misi_id=misi.id,
+            tanggal_selesai=datetime.now().date(),
+            status='Selesai'
+        )
+        db.session.add(new_progress)
+        db.session.commit()
 
         # Simpan data ke database (Model Laporan)
         laporan = Laporan(
@@ -289,7 +376,10 @@ def history():
         print(laporan.tps_id)
         laporan.tanggal_laporan = format_tanggal_locale(laporan.tanggal_laporan)
 
-    return render_template('history.html', data_laporan=data_laporan, page='history')
+    page = request.args.get('page', 1, type=int)
+    laporan_pagination = Laporan.query.filter_by(status='3').paginate(page=page, per_page=pagination_pages)
+
+    return render_template('history.html', laporan_pagination=laporan_pagination, min=min, max=max, data_laporan=data_laporan, page='history')
 
 # todo ====================== NOTIFICATION SECTION ===========================
 @views.route('/notification/<string:notification_id>/mark_as_read', methods=['POST', 'GET'])
@@ -306,6 +396,119 @@ def mark_notification_as_read(notification_id):
     db.session.commit()
 
     return jsonify({'success': True})
+
+
+# todo ====================== POINT & REWARD SYSTEM ==========================
+
+
+@views.route('/misi')
+@login_required
+def misi():
+    reset_misi_harian()
+
+    daftar_misi = Misi.query.all()
+    user = Masyarakat.query.get(current_user.id)
+
+    progress_user = {}
+    for misi in daftar_misi:
+        # Check if the mission has already been completed today
+        progress_today = ProgressMisi.query.filter_by(
+            masyarakat_id=current_user.id,
+            misi_id=misi.id,
+            tanggal_selesai=datetime.now().date()
+        ).first()
+
+        progress_user[misi.id] = {
+            'misi': misi,
+            'status': 'Selesai' if progress_today else 'Belum Selesai'
+        }
+    
+    return render_template('misi.html', 
+                            daftar_misi=progress_user, 
+                            user=user,
+                            page='misi')
+
+@views.route('/selesaikan_misi/<misi_id>', methods=['POST'])
+@login_required
+def selesaikan_misi(misi_id):
+    misi = Misi.query.get_or_404(misi_id)
+    user = Masyarakat.query.get(current_user.id)
+
+     # Check if the mission has already been completed today
+    progress_today = ProgressMisi.query.filter_by(
+        masyarakat_id=current_user.id,
+        misi_id=misi.id,
+        tanggal_selesai=datetime.now().date()
+    ).first()
+
+    if progress_today:
+        flash('Misi sudah diselesaikan hari ini!', 'warning')
+        return redirect(url_for('views.misi'))
+    
+    # Contoh validasi: Periksa apakah ada file foto di request
+    foto = request.files.get('foto')  
+    if not foto:
+        flash('Silahkan upload bukti untuk menyelesaikan misi!', 'danger')
+        return redirect(url_for('views.misi'))
+
+    # ... (Logika validasi lain sesuai kebutuhan misi, misal: verifikasi foto)
+
+    # Jika validasi berhasil:
+    if True: 
+        # Update ProgressMisi
+        new_progress = ProgressMisi(
+            masyarakat_id=current_user.id,
+            misi_id=misi.id,
+            tanggal_selesai=datetime.now().date(),
+            status='Selesai'
+        )
+        db.session.add(new_progress)
+
+        # Tambahkan poin ke user
+        user.poin += misi.poin
+        db.session.commit()
+
+        # Send notification
+        send_notification(current_user.id, f"Selamat, Anda telah menyelesaikan misi {misi.nama_misi} dan mendapatkan {misi.poin} poin!")
+        
+        flash('Misi berhasil diselesaikan!', 'success')
+        emit('misi_selesai', {'message': 'Misi berhasil diselesaikan!'}, room=current_user.id)
+        return redirect(url_for('views.misi'))
+    else:
+        flash('Gagal menyelesaikan misi.', 'danger')
+        return redirect(url_for('views.misi'))
+
+@views.route('/reward')
+@login_required
+def reward():
+    daftar_reward = Reward.query.order_by(Reward.kategori, Reward.nama_reward).all()
+    user = Masyarakat.query.get(current_user.id)
+    return render_template('reward.html', 
+                           daftar_reward=daftar_reward, 
+                           user=user,
+                           page='reward')
+
+@views.route('/klaim_reward/<reward_id>')
+@login_required
+def klaim_reward(reward_id):
+    reward = Reward.query.get_or_404(reward_id)
+    user = Masyarakat.query.get(current_user.id)
+
+    if user.poin >= reward.poin_diperlukan:
+        # Kurangi poin user
+        user.poin -= reward.poin_diperlukan
+        
+        # Catat riwayat reward
+        riwayat = RiwayatReward(user_id=user.user_id, reward_id=reward.id)
+        db.session.add(riwayat)
+        db.session.commit()
+
+        send_notification(current_user.id, f"Selamat, Anda telah mengklaim reward {reward.nama_reward}!")
+        flash('Reward berhasil diklaim!', 'success')
+    else:
+        flash('Poin Anda tidak cukup.', 'danger')
+
+    return redirect(url_for('views.reward'))
 
 
 # todo ====================== PROFILE SECTION ======================

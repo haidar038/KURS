@@ -1,0 +1,35 @@
+{% extends 'base.html' %} {% block container %}
+<div class="container h-100">
+    <p class="h3 mt-3 fw-bold text-center">Daftar Misi</p>
+    <hr />
+    <div class="row">
+        <div class="col-md-4">
+            {% for misi_id, data in daftar_misi.items() %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold text-success text-center">{{ data.misi.nama_misi }}</h5>
+                    <hr />
+                    <p class="card-text text-muted">{{ data.misi.deskripsi }}</p>
+                    <p class="mb-0">Poin: <strong>{{ data.misi.poin }}</strong></p>
+                    <p>Frekuensi: <strong>{{ data.misi.frekuensi }}</strong></p>
+
+                    {% if data.status == 'Belum Selesai' %} {% if data.misi.nama_misi == 'Setor Sampahmu' %}
+                    <a href="{{ url_for('views.reports' ) }}" role="button" class="btn btn-success">Setor Sekarang!</a>
+                    {% else %}
+                    <form method="POST" action="{{ url_for('views.selesaikan_misi', misi_id=data.misi.id) }}" enctype="multipart/form-data">
+                        <div class="mb-2">
+                            <label for="foto" class="form-label">Upload Foto</label>
+                            <input class="form-control" type="file" id="foto" name="foto" />
+                        </div>
+                        <button type="submit" class="btn btn-success btn-block mt-2">Selesaikan Misi</button>
+                    </form>
+                    {% endif %} {% else %}
+                    <p class="text-success">Misi Selesai! <i class="fa-solid fa-check"></i></p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

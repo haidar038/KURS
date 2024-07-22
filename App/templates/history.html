@@ -53,6 +53,89 @@
                         {% endif %}
                     </tbody>
                 </table>
+                <div class="d-flex justify-content-center">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination">
+                            {% if laporan_pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('views.history', page=laporan_pagination.prev_num) }}" aria-label="Previous">
+                                    <span aria-hidden="true">«</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#" aria-label="Previous">
+                                    <span aria-hidden="true">«</span>
+                                </a>
+                            </li>
+                            {% endif %} {% if laporan_pagination.page <= 3 %} {% for page_num in range(1, min(laporan_pagination.pages, 4) + 1) %} {% if page_num == laporan_pagination.page %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link bg-success border-success">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('views.history', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %} {% endfor %} {% if laporan_pagination.pages > 3 %}
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#">…</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('views.history', page=laporan_pagination.pages) }}">{{ laporan_pagination.pages }}</a>
+                            </li>
+                            {% endif %} {% elif laporan_pagination.page >= laporan_pagination.pages - 2 %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('views.history', page=1) }}">1</a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#">…</a>
+                            </li>
+                            {% for page_num in range(max(1, laporan_pagination.pages - 3), laporan_pagination.pages + 1) %} {% if page_num == laporan_pagination.page %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link bg-success border-success">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('views.history', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %} {% endfor %} {% else %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('views.history', page=1) }}">1</a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#">…</a>
+                            </li>
+                            {% for page_num in range(laporan_pagination.page - 1, laporan_pagination.page + 2) %} {% if page_num == laporan_pagination.page %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link bg-success border-success">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('views.history', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %} {% endfor %}
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#">…</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('views.history', page=laporan_pagination.pages) }}">{{ laporan_pagination.pages }}</a>
+                            </li>
+                            {% endif %} {% if laporan_pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link text-success" href="{{ url_for('views.history', page=laporan_pagination.next_num) }}" aria-label="Next">
+                                    <span aria-hidden="true">»</span>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <a class="page-link text-success" href="#" aria-label="Next">
+                                    <span aria-hidden="true">»</span>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
             </div>
         </div>
     </div>
@@ -90,8 +173,8 @@
     mapboxgl.accessToken = 'pk.eyJ1IjoiaGFpZGFyMDM4IiwiYSI6ImNseWxtanB4ZzBkOGIyaXM2NXpqNHltbTEifQ.3UzDa633gOXAJMYeAJZBvQ';
     map = new mapboxgl.Map({
         container: 'tps-detail-map',
-        style: 'mapbox://styles/mapbox/streets-v11',
-        center: [107.6096, -6.9175],
+        style: 'mapbox://styles/mapbox/standard',
+        center: [127.3460762, 0.8151665],
         zoom: 10,
     });
 
@@ -101,7 +184,7 @@
             id: 'satellite',
             source: {
                 type: 'raster',
-                url: 'mapbox://mapbox.satellite',
+                url: 'mapbox://mapbox.standard',
                 tileSize: 256,
             },
             type: 'raster',
@@ -119,19 +202,19 @@
         }
 
         // Buat popup
-        const popup = new mapboxgl.Popup({ offset: 30 }).setLngLat([longitude, latitude]).setHTML('<h5>Lokasi Sampah Anda</h5>').addTo(map);
+        const popup = new mapboxgl.Popup({ offset: 30 }).setLngLat([longitude, latitude]).setHTML('<p class="mb-0">Lokasi Sampah Anda</p>').addTo(map);
 
         // Tambahkan marker dengan popup
-        marker = new mapboxgl.Marker().setLngLat([longitude, latitude]).setPopup(popup).addTo(map);
+        marker = new mapboxgl.Marker({ color: '#ff0000' }).setLngLat([longitude, latitude]).addTo(map);
 
         map.flyTo({
             center: [longitude, latitude],
-            zoom: 15,
+            zoom: 16,
         });
 
-        // Set delete link dengan ID laporan
-        // const deleteLink = document.getElementById('deleteReportLink');
-        // deleteLink.href = `{{ url_for('views.delete_report', id='') }}/${reportId}`;
+        map.on('load', () => {
+            marker.setPopup(popup);
+        });
 
         // Set reports picture dengan ID
         const foto = document.getElementById('reportPicture'); // Perbaiki ID elemen

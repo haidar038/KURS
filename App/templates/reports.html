@@ -2,11 +2,11 @@
 <div class="container pt-3 mb-2">
     <div class="row">
         <div class="col">
-            <p class="fw-bold h3 text-center">Lapor Setoran Sampah</p>
+            <p class="fw-bold h3 text-center">Setoran Sampah</p>
             <hr />
             <form method="POST" action="{{ url_for('views.reports') }}" enctype="multipart/form-data">
                 <div class="mb-3">
-                    <label for="lokasi" class="form-label">Pilih Lokasi Sampah</label>
+                    <label for="lokasi" class="form-label fw-bold p-2 rounded-3 text-bg-success w-100 text-center mb-3">Pilih Lokasi Sampah</label>
                     <div id="report-map" style="height: 300px"></div>
                     <input type="hidden" id="latitude" name="latitude" />
                     <input type="hidden" id="longitude" name="longitude" />
@@ -42,14 +42,14 @@
     const map = new mapboxgl.Map({
         container: 'report-map',
         style: 'mapbox://styles/mapbox/streets-v11',
-        center: [107.6096, -6.9175],
+        center: [127.3460762, 0.8151665],
         zoom: 10,
     });
 
     var marker = new mapboxgl.Marker({
         draggable: true,
     })
-        .setLngLat([107.6096, -6.9175])
+        .setLngLat([127.3460762, 0.8151665])
         .addTo(map);
 
     function getLocation() {

@@ -21,8 +21,9 @@
                     </div>
                     {% endfor %} {% endif %} {% endwith %}
                     <button type="submit" class="btn btn-success w-100">Masuk</button>
-                    <p class="text-center mt-3">Belum punya akun? <a href="{{ url_for('auth.register' ) }}" class="link-success fw-bold">Daftar disini</a></p>
                 </form>
+                <a href="{{ url_for('auth.forgot_password') }}" class="link-success fw-bold text-center mt-3 mb-2">Lupa Kata Sandi</a>
+                <p class="text-center">Belum punya akun? <a href="{{ url_for('auth.register' ) }}" class="link-success fw-bold">Daftar disini</a></p>
             </div>
         </div>
     </div>
