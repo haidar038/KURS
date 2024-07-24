@@ -121,6 +121,7 @@ class Laporan(db.Model):
     foto = db.Column(db.String(255), nullable=True)
     berat = db.Column(db.Float, nullable=True)  # Dalam kilogram
     jenis_sampah = db.Column(db.String(50), nullable=True)
+    is_paid = db.Column(db.Boolean, nullable=False, default=False)
 
     masyarakat = db.relationship('Masyarakat', backref='laporan')
     petugas = db.relationship('Petugas', backref='laporan')  # Relasi ke model Petugas

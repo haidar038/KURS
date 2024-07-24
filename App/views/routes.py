@@ -8,16 +8,28 @@ from sqlalchemy.exc import NoResultFound
 from collections import defaultdict
 from math import radians, sin, cos, sqrt, asin
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from xendit.apis import PaymentMethodApi
+from xendit.apis import PaymentRequestApi
+
 # Import other necessary modules and models
 from App.models import TPS, Artikel, Laporan, Masyarakat, User, Notification, Petugas, FaktorEmisiCO2, Misi, ProgressMisi, Reward, RiwayatReward
 from App.utils import get_unread_notifications, send_notification
 from App import db
 
-import pytz, os, json
+import pytz, os, json, xendit, hmac, hashlib, locale
 
 views = Blueprint('views', __name__)
 
+locale.setlocale(locale.LC_ALL, 'id_ID')
+
+load_dotenv()
+
 PICTURE_ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+xendit.set_api_key(os.environ.get('XENDIT_API_KEY'))
+api_client = xendit.ApiClient()
+api_instance = PaymentMethodApi(api_client)
 
 pagination_pages = 8
 
@@ -38,7 +50,7 @@ def save_profile_picture(file):
 
 def format_tanggal_locale(tanggal, locale='en'):
     # Dapatkan locale dari request atau gunakan default 'en'
-    locale = request.accept_languages.best_match(['id', 'en']) or locale
+    locale = request.accept_languages.best_match(['id', 'ID']) or locale
 
     # Dapatkan timezone menggunakan pytz
     timezone = pytz.timezone('Asia/Jayapura')
@@ -204,12 +216,7 @@ def index():
 
     total_ch4_dihemat = 0
     for laporan in laporan_sampah:
-        if laporan.jenis_sampah == 'Organik':  # Hanya hitung untuk sampah organik
-            total_ch4_dihemat += hitung_emisi_ch4(laporan.berat)  # Konversi kg ke ton
-        elif laporan.jenis_sampah == 'Anorganik':  # Hanya hitung untuk sampah anorganik
-            total_ch4_dihemat += hitung_emisi_ch4(laporan.berat)  # Konversi kg ke ton
-        elif laporan.jenis_sampah == 'Campuran':  # Hanya hitung untuk sampah campuran
-            total_ch4_dihemat += hitung_emisi_ch4(laporan.berat)  # Konversi kg ke ton
+        total_ch4_dihemat += hitung_emisi_ch4(laporan.berat)  # Konversi kg ke ton
 
     total_co2_dihemat = 0
     for jenis_sampah, berat_sampah in data_sampah.items():
@@ -330,7 +337,7 @@ def reports():
                 sender_id=masyarakat.user_id,
                 message=f"Laporan baru dibuat oleh {masyarakat.nama_lengkap}",
             )
-        db.session.add(notification)
+            db.session.add(notification)
         db.session.commit()
 
         # Emit SocketIO event (more on this later in JavaScript)
@@ -510,6 +517,103 @@ def klaim_reward(reward_id):
 
     return redirect(url_for('views.reward'))
 
+
+# todo ====================== PAYMENTS SECTION ======================
+@views.route('/payment/<string:id>', methods=['GET', 'POST'])
+@login_required
+def payment(id):
+    laporan = Laporan.query.get_or_404(id)
+    if request.method == 'POST':
+        amount = int(request.form.get('amount'))
+        reference_id = f"order-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        
+        payment_request_parameters = {
+            "reference_id": reference_id,
+            "amount": amount,
+            "currency": "IDR",
+            "payment_method": {
+                "type": "QR_CODE",
+                "reusability": "ONE_TIME_USE",
+                "qr_code": {
+                    "channel_code": "QRIS",
+                    "channel_properties": {
+                        "qr_string": "INITIAL_QR_STRING"
+                    }
+                }
+            }
+        }
+
+        try:
+            api_client = xendit.ApiClient()
+            api_instance = PaymentRequestApi(api_client)
+            api_response = api_instance.create_payment_request(payment_request_parameters=payment_request_parameters)
+            
+            qr_string = api_response['payment_method']['qr_code']['channel_properties']['qr_string']
+            
+            return render_template('qr_code.html', qr_string=qr_string, amount=amount, reference_id=reference_id, laporan_id=id)
+
+        except xendit.XenditSdkException as e:
+            return render_template('payment.html', error=str(e), laporan=laporan)
+
+    return render_template('payment.html', laporan=laporan)
+
+@views.route('/complete_payment/<string:id>', methods=['POST'])
+@login_required
+def complete_payment(id):
+    laporan = Laporan.query.get_or_404(id)
+    amount = request.form.get('amount')
+    reference_id = request.form.get('reference_id')
+    payment_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    laporan.is_paid = True
+    db.session.commit()
+    
+    # Get all petugas users
+    all_petugas_users = User.query.filter_by(user_type='petugas').all()
+    
+    # Get the current user's full name
+    current_user_fullname = current_user.masyarakat.nama_lengkap if hasattr(current_user, 'masyarakat') else current_user.username
+    
+    # Send notification to all petugas
+    for petugas_user in all_petugas_users:
+        send_notification(
+            petugas_user.id, 
+            f"User {current_user_fullname} telah menyelesaikan pembayaran untuk laporan ID: {laporan.id}. Silakan diproses!"
+        )
+        
+    return render_template('invoice.html', amount=amount, reference_id=reference_id, payment_date=payment_date, laporan=laporan)
+    # return redirect(url_for('views.dashboard'))
+
+@views.route('/xendit-webhook', methods=['POST'])
+def xendit_webhook():
+    # Verify the webhook signature
+    xendit_signature = request.headers.get('X-CALLBACK-SIGNATURE')
+    computed_signature = hmac.new(
+        bytes('your_webhook_verification_token', 'utf-8'),
+        msg=request.data,
+        digestmod=hashlib.sha256
+    ).hexdigest()
+
+    if xendit_signature != computed_signature:
+        return jsonify({'error': 'Invalid signature'}), 400
+
+    # Process the webhook payload
+    payload = request.json
+    event_type = payload.get('event')
+
+    if event_type == 'payment.succeeded':
+        reference_id = payload.get('data', {}).get('reference_id')
+        amount = payload.get('data', {}).get('amount')
+        
+        # Update your database or perform any necessary actions
+        # For example:
+        # update_payment_status(reference_id, 'paid', amount)
+
+        print(f"Payment succeeded for reference_id: {reference_id}, amount: {amount}")
+    
+    # Add more event types as needed
+
+    return jsonify({'success': True}), 200
 
 # todo ====================== PROFILE SECTION ======================
 

@@ -110,7 +110,9 @@
     --bs-accordion-active-color: white;
 }
 
-.custom-popup {
+.form-check-input:checked {
+    background-color: var(--bs-success);
+    border-color: var(--bs-success);
 }
 
 #map-wrapper-outer {

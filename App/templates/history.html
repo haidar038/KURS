@@ -38,7 +38,7 @@
                             <td>{{ item.berat }}</td>
                             <td>
                                 <div class="d-flex justify-content-center align-items-center justify-content-lg-center">
-                                    <a href="#" class="btn btn-light fs-3" onclick="showTPSDetails('{{ item.latitude }}', '{{ item.longitude }}', '{{ item.id }}', '{{ item.foto }}', '{{ item.tanggal_laporan }}')">
+                                    <a href="#" class="btn btn-light fs-3" onclick="showTPSDetails('{{ item.latitude }}', '{{ item.longitude }}', '{{ item.id }}', '{{ item.foto }}', '{{ item.tanggal_laporan }}', '{{ item.is_paid }}')">
                                         <i class="fa fa-chevron-circle-right"></i>
                                     </a>
                                 </div>
@@ -143,13 +143,17 @@
 
 <!-- Modal untuk menampilkan peta -->
 <div class="modal fade" id="tpsDetailModal" tabindex="-1" aria-labelledby="tpsDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="tpsDetailModalLabel">Info Lokasi</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <div class="d-flex gap-2">
+                    <span class="fw-bold">Status :</span>
+                    <p id="isPaid"></p>
+                </div>
                 <p class="mb-3" id="tglLaporan"></p>
                 <div id="map-wrapper-outer" class="d-flex justify-content-center align-items-center mb-3">
                     <div id="map-wrapper-inner">
@@ -159,14 +163,16 @@
                 <p>Foto Sampah :</p>
                 <img alt="Foto Sampah" id="reportPicture" class="img-fluid w-100" src="{{ url_for('static', filename='img/trash_default.png' ) }}" />
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer d-flex justify-content-between">
+                <div id="pay"></div>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
 </div>
-{% endblock %} {% block scripts %}
+{% endblock %} {% block scripts %} {% set payment_url = url_for('views.payment', id='REPORT_ID') %}
 <script>
+    var paymentUrl = '{{ payment_url | safe }}';
     let map;
     let marker;
 
@@ -193,8 +199,10 @@
         });
     });
 
-    function showTPSDetails(latitude, longitude, reportId, reportPic, tglLaporan) {
+    function showTPSDetails(latitude, longitude, reportId, reportPic, tglLaporan, isPaid) {
         $('#tpsDetailModalLabel').text('Lokasi Anda');
+
+        console.log(isPaid);
 
         // Hapus marker sebelumnya jika ada
         if (marker) {
@@ -217,11 +225,22 @@
         });
 
         // Set reports picture dengan ID
-        const foto = document.getElementById('reportPicture'); // Perbaiki ID elemen
-        foto.src = `${reportPic}`; // Gunakan .src, bukan setAttribute
+        const foto = document.getElementById('reportPicture');
+        foto.src = reportPic; // Remove template literal
 
-        const tanggalLaporan = document.getElementById('tglLaporan'); // Perbaiki ID elemen
-        tanggalLaporan.innerHTML = `<b>Tanggal Laporan</b>: ${tglLaporan}`; //
+        const tanggalLaporan = document.getElementById('tglLaporan');
+        tanggalLaporan.innerHTML = `<b>Tanggal Laporan</b>: ${tglLaporan}`; // Use backticks for template literal
+
+        const paidStat = document.getElementById('isPaid');
+        const payBtn = document.getElementById('pay');
+
+        if (isPaid == 'False') {
+            payBtn.innerHTML = '<a href="' + paymentUrl.replace('REPORT_ID', reportId) + '" class="btn btn-success" role="button">Bayar</a>';
+            paidStat.innerHTML = '<span class="badge text-bg-danger">Belum Bayar</span>';
+        } else {
+            payBtn.innerHTML = '<a href="#" class="btn btn-success disabled" role="button" disabled>Sudah Bayar</a>';
+            paidStat.innerHTML = '<span class="badge text-bg-success">Sudah Bayar</span>';
+        }
 
         $('#tpsDetailModal').modal('show');
     }

@@ -4,6 +4,12 @@
         <div class="col">
             <p class="fw-bold h3 text-center">Setoran Sampah</p>
             <hr />
+            {% with messages = get_flashed_messages(with_categories=true) %} {% if messages %} {% for category, message in messages %}
+            <div class="alert d-flex justify-content-between alert-dismissable fade show mb-3 alert-{{ category }}" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %} {% endif %} {% endwith %}
             <form method="POST" action="{{ url_for('views.reports') }}" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label for="lokasi" class="form-label fw-bold p-2 rounded-3 text-bg-success w-100 text-center mb-3">Pilih Lokasi Sampah</label>

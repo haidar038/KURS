@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+<!-- BLOCK -->
+{% block container %}
+<div class="container pt-2">
+    <div class="row">
+        <div class="col text-center">
+            <h1 class="mb-4">Scan the QR Code to Pay</h1>
+            <p>Amount: {{ amount }} IDR</p>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ qr_string }}" alt="QR Code" class="mb-4" />
+            <p>QR String: {{ qr_string }}</p>
+            <p>Once the payment is completed, click the button below to simulate successful payment.</p>
+            <form action="{{ url_for('views.complete_payment', id=laporan_id) }}" method="post">
+                <input type="hidden" name="amount" value="{{ amount }}" />
+                <input type="hidden" name="reference_id" value="{{ reference_id }}" />
+                <button type="submit" class="btn btn-success">Complete Payment</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

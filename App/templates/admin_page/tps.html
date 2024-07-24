@@ -34,9 +34,9 @@
                                         <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#updateTPS{{ tps_list.id }}" href="#">Update</a></li>
                                         <li><hr class="dropdown-divider" /></li>
                                         <li>
-                                            <a class="dropdown-item d-flex align-items-center justify-content-between" role="button" href="{{ url_for('app_admin.delete_tps', id=tps_list.id ) }}"
-                                                >Hapus <i class="fa-solid fa-trash-can text-danger"></i
-                                            ></a>
+                                            <button type="button" class="dropdown-item d-flex align-items-center justify-content-between" data-bs-toggle="modal" data-bs-target="#deleteTPS{{ tps_list.id }}">
+                                                Hapus <i class="fa-solid fa-trash-can text-danger"></i>
+                                            </button>
                                         </li>
                                     </ul>
                                 </div>
@@ -193,6 +193,24 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="deleteTPS{{ item.id }}" tabindex="-1" aria-labelledby="deleteTPS{{ item.id }}Label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="deleteTPS{{ item.id }}Label">Hapus Data TPS</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0 text-center">Apakah anda yakin akan menghapus data <b>{{ item.nama }}</b> dengan alamat <b>{{ item.alamat }}</b>?</p>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <a class="btn btn-danger" role="button" href="{{ url_for('app_admin.delete_tps', id=item.id ) }}">Ya! Hapus</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endfor %}
 
 <div class="modal fade" id="addTps" tabindex="-1" aria-labelledby="addTpsLabel" aria-hidden="true">
@@ -263,6 +281,7 @@
         </div>
     </div>
 </div>
+
 {% endblock %} {% block scripts %}
 <!-- SCRIPTS -->
 <script>

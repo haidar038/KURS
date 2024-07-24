@@ -52,6 +52,7 @@ def create_app():
     UPLOAD_FOLDER = os.path.join(app.root_path, 'static/uploads')
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Pastikan folder ada
 
+    app.config['BASE_URL'] = os.environ.get('BASE_URL', 'http://localhost:5000')
     app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "kursampah123")  # Gunakan variabel environment atau nilai default
     app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('SECURITY_PASSWORD_SALT') or 'kurs_app_security_salt'
     app.config['SQLALCHEMY_DATABASE_URI'] = mysql_uri

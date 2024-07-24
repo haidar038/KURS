@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+<!-- BLOCK -->
+{% block container %}
+<div class="container pt-2">
+    <div class="row">
+        <div class="col">
+            <h1 class="text-center mb-3">Pembayaran</h1>
+            <div class="card">
+                <form action="{{ url_for('views.payment', id=laporan.id) }}" method="post">
+                    <div class="card-body">
+                        <div class="mb-3 text-center">Pilih nominal untuk bayar ke kurir</div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="amount" value="5000" id="amount5k" checked />
+                            <label class="form-check-label" for="amount5k"> Rp5.000 </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="amount" value="10000" id="amount10k" />
+                            <label class="form-check-label" for="amount10k"> Rp10.000 </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="amount" value="15000" id="amount15k" />
+                            <label class="form-check-label" for="amount15k"> Rp15.000 </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="amount" value="20000" id="amount20k" />
+                            <label class="form-check-label" for="amount20k"> Rp20.000 </label>
+                        </div>
+                        {% if error %}
+                        <p class="text-danger mb-0">{{ error }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <a role="button" href="{{ url_for('views.history') }}" class="btn btn-outline-secondary">Kembali</a>
+                        <button type="submit" class="btn btn-success">Bayar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

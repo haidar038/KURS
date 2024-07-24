@@ -42,7 +42,7 @@
             </div>
             <hr class="mb-3" />
             <div class="d-flex flex-column gap-2">
-                <a href="{{ url_for('auth.logout' ) }}" role="button" class="btn btn-light px-2 py-2 rounded-3 d-flex justify-content-start align-items-center">
+                <a type="button" class="btn btn-light px-2 py-2 rounded-3 d-flex justify-content-start align-items-center" data-bs-toggle="modal" data-bs-target="#logoutModal">
                     <ion-icon name="power" class="me-2 fs-3 bg-body-secondary p-2 rounded-3"></ion-icon> Keluar <ion-icon name="chevron-forward" class="fs-2 ms-auto"></ion-icon>
                 </a>
             </div>
@@ -739,6 +739,25 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="logoutModalLabel">Logout</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0 text-center">Apakah anda yakin ingin keluar?</p>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <a class="btn btn-success" role="button" href="{{ url_for('auth.logout' ) }}">Ya! Keluar <i class="fa fa-power-off"></i></a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %} {% block scripts %}
 <script>
     const toggleOldPassword = document.querySelector('#toggleOldPassword');

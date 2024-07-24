@@ -22,7 +22,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% if data_laporan.items %} {% for item in data_laporan %}
+                        {% if data_laporan.items %} {% for item in data_laporan if item.is_paid != 0 %}
                         <tr class="align-middle">
                             <th scope="row">{{ loop.index + ((page - 1) * per_page) }}</th>
                             <td>{% if item.tps %} {{ item.tps.nama }} - {{ item.tps.alamat }} {% else %} Belum Ada {% endif %}</td>

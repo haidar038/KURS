@@ -30,11 +30,22 @@ def generate_username(email):
 def send_confirmation_email(user_email):
     try:
         token = generate_confirmation_token(user_email)
-        confirm_url = url_for('auth.confirm_email', token=token, _external=True)
+        
+        # Get the current domain
+        if request:
+            base_url = request.host_url.rstrip('/')
+        else:
+            # Fallback to a config value if outside request context
+            base_url = current_app.config.get('BASE_URL', 'http://localhost:5000')
+        
+        # Construct the confirmation URL using the current domain
+        confirm_url = f"{base_url}{url_for('auth.confirm_email', token=token)}"
+        
         html = render_template('auth/activate.html', confirm_url=confirm_url)
         subject = "Silakan konfirmasi email anda"
         msg = Message(subject, recipients=[user_email], html=html)
         current_app.logger.info(f"Mencoba mengirim email ke {user_email}")
+        current_app.logger.info(f"Confirmation URL: {confirm_url}")
         mail.send(msg)
         current_app.logger.info(f"Email berhasil dikirim ke {user_email}")
     except Exception as e:

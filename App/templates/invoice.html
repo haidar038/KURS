@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+<!-- INVOICE -->
+{% block container %}
+<div class="container pt-2">
+    <div class="row">
+        <div class="col">
+            <h1 class="mb-4">Payment Invoice</h1>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Payment Details</h5>
+                    <p class="card-text">Amount: {{ amount }} IDR</p>
+                    <p class="card-text">Reference ID: {{ reference_id }}</p>
+                    <p class="card-text">Status: Paid</p>
+                    <p class="card-text">Date: {{ payment_date }}</p>
+                </div>
+            </div>
+            <a href="{{ url_for('views.history') }}" class="btn btn-primary mt-3">Back to History</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
